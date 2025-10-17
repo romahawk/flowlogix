@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Stock IN Report{% endblock %}
+{% block body %}
+<div class="bg-white dark:bg-gray-800 p-6 rounded shadow max-w-full px-[50px]">
+    <div class="flex justify-between items-start">
+        <h1 class="text-2xl font-bold mb-4">Stock IN Report</h1>
+        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" class="w-36 object-contain h-auto">
+    </div>
+
+    <form method="POST">
+        <!-- Warehouse Info -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium">Warehouse</label>
+                <select name="warehouse_address"
+                    class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm" required>
+                    <option value="">Select Warehouse</option>
+                    <option>Pharmalogis</option>
+                    <option>iCargo</option>
+                    <option>Quehenberger</option>
+                    <option>Systra</option>
+                    <option>Schwarze</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">Pos. No.</label>
+                <input type="text" name="pos_no"
+                    class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium">Client</label>
+                <select name="client" class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm"
+                    required>
+                    <option value="">Select Client</option>
+                    <option>Anariti</option>
+                    <option>Aurora</option>
+                    <option>Jinling</option>
+                    <option>Lanhai</option>
+                    <option>Lekhim Vilnius</option>
+                    <option>Lekhim Kiev</option>
+                    <option>Osta</option>
+                    <option>PCC</option>
+                    <option>Pharmalogis</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">Client Ref.</label>
+                <input type="text" name="customer_ref"
+                    class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+            </div>
+        </div>
+        <!-- Table -->
+        <div class="overflow-auto">
+            <table class="w-full text-sm text-left border" id="stockreport-table">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr class="text-xs text-gray-700 dark:text-gray-300">
+                        <th class="p-2 border w-[120px]">Entrance</th>
+                        <th class="p-2 border">Article/Batch</th>
+                        <th class="p-2 border">Colli</th>
+                        <th class="p-2 border">Packing</th>
+                        <th class="p-2 border">PCS</th>
+                        <th class="p-2 border">Colli/Pal.</th>
+                        <th class="p-2 border">Pcs Total</th>
+                        <th class="p-2 border">Pal.</th>
+                        <th class="p-2 border w-[200px]">Product</th>
+                        <th class="p-2 border">Gross kg</th>
+                        <th class="p-2 border">Net kg</th>
+                        <th class="p-2 border w-[200px]">Sender</th>
+                        <th class="p-2 border">Customs Status</th>
+                        <th class="p-2 border">Stockref</th>
+                        <th class="p-2 border text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="stockreport-body">
+                    <tr>
+                        <td class="p-2 border"><input type="date" name="entrance_date"
+                                class="w-full px-2 py-1 rounded bg-white dark:bg-gray-700"></td>
+                        <td class="p-2 border"><input type="text" name="article_batch" class="w-full px-2 py-1 rounded">
+                        </td>
+                        <td class="p-2 border"><input type="number" name="colli" class="w-full px-2 py-1 rounded"
+                                oninput="updateTotals()"></td>
+                        <td class="p-2 border"><input type="text" name="packing" class="w-full px-2 py-1 rounded"></td>
+                        <td class="p-2 border"><input type="number" name="pcs" class="w-full px-2 py-1 rounded"
+                                oninput="updateTotals()"></td>
+                        <td class="p-2 border"><input type="number" name="colli_per_pal"
+                                class="w-full px-2 py-1 rounded"></td>
+                        <td class="p-2 border"><input type="number" name="pcs_total" class="w-full px-2 py-1 rounded"
+                                oninput="updateTotals()"></td>
+                        <td class="p-2 border"><input type="number" name="pal" class="w-full px-2 py-1 rounded"
+                                oninput="updateTotals()"></td>
+                        <td class="whitespace-normal break-words max-w-[200px]">
+                            <input type="hidden" name="product" value="{{ item.product_name }}">
+                            <span class="text-gray-800 dark:text-gray-200 text-sm block">
+                                {{ item.product_name }}
+                            </span>
+                        </td>
+                        <td class="p-2 border"><input type="number" step="0.01" name="gross_kg"
+                                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+                        <td class="p-2 border"><input type="number" step="0.01" name="net_kg"
+                                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+                        <td class="p-2 border"><input type="text" name="sender" class="w-full px-2 py-1 rounded"
+                                title="Sender full name"></td>
+                        <td class="p-2 border">
+                            <select name="customs_status" class="w-full px-2 py-1 rounded"
+                                onchange="updateCustomsDates()">
+                                <option value="EU">EU</option>
+                                <option value="T1">T1</option>
+                            </select>
+                        </td>
+                        <td class="p-2 border"><input type="text" name="stockref" class="w-full px-2 py-1 rounded"></td>
+                        <td class="p-2 border text-center">
+                            <button type="button" onclick="addRow(this)" class="text-green-600">+</button>
+                            <button type="button" onclick="deleteRow(this)" class="text-red-600 ml-1">&minus;</button>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr class="text-sm font-semibold">
+                        <td colspan="2" class="px-2 py-1 border text-right">TOTAL:</td>
+                        <td class="px-2 py-1 border" id="total-colli">0</td>
+                        <td class="px-2 py-1 border"></td>
+                        <td class="px-2 py-1 border" id="total-pcs">0</td>
+                        <td class="px-2 py-1 border"></td>
+                        <td class="px-2 py-1 border" id="total-pcs-total">0</td>
+                        <td class="px-2 py-1 border" id="total-pal">0</td>
+                        <td class="px-2 py-1 border"></td>
+                        <td class="px-2 py-1 border" id="total-gross">0.00</td>
+                        <td class="px-2 py-1 border" id="total-net">0.00</td>
+                        <td colspan="4" class="px-2 py-1 border"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- ATB Customs Info -->
+        <div class="grid grid-cols-3 gap-4 mt-8 text-sm">
+            <div>
+                <label class="block font-medium">ATB First:</label>
+                <span id="atb-frist" class="block mt-1 text-gray-700 dark:text-gray-300">—</span>
+            </div>
+            <div>
+                <label class="block font-medium">Customs OZL:</label>
+                <input type="text" name="customs_ozl"
+                    class="w-full mt-1 border px-3 py-1 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+            </div>
+            <div>
+                <label class="block font-medium">Free till:</label>
+                <span id="free-till" class="block mt-1 text-gray-700 dark:text-gray-300">—</span>
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="grid grid-cols-2 gap-8 mt-10">
+            <!-- Left: Date & Signature (Client) -->
+            <div class="text-center">
+                <div class="flex justify-center items-center gap-4 mb-2">
+                    <input type="date" name="signature_date_client" class="border px-3 py-1 rounded">
+                    <select id="signature-client-selector" class="border rounded px-2 py-1"
+                        onchange="updateSignaturePreview('client')">
+                        <option value="signature1.png">Signature 1</option>
+                        <option value="signature2.png">Signature 2</option>
+                        <option value="signature3.png">Signature 3</option>
+                    </select>
+                </div>
+                <img id="signature-client-preview" src="/static/images/signatures/signature1.png" alt="Office Signature"
+                    class="mx-auto w-32 h-auto mb-2">
+                <div class="border-t border-black w-2/3 mx-auto"></div>
+                <p class="text-sm mt-1">Date & Signature</p>
+            </div>
+
+            <!-- Right: Signature Warehouse -->
+            <div class="text-center">
+                <div class="flex justify-center items-center gap-4 mb-2">
+                    <input type="date" name="signature_date_warehouse" class="border px-3 py-1 rounded">
+                    <select id="signature-warehouse-selector" class="border rounded px-2 py-1"
+                        onchange="updateSignaturePreview('warehouse')">
+                        <option value="signature1.png">Signature 1</option>
+                        <option value="signature2.png">Signature 2</option>
+                        <option value="signature3.png">Signature 3</option>
+                    </select>
+                </div>
+                <img id="signature-warehouse-preview" src="/static/images/signatures/signature1.png"
+                    alt="Warehouse Signature" class="mx-auto w-32 h-auto mb-2">
+                <div class="border-t border-black w-2/3 mx-auto"></div>
+                <p class="text-sm mt-1">Signature Warehouse</p>
+            </div>
+        </div>
+
+        <!-- Save -->
+        <div class="mt-6 text-right">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+                Save Stockreport
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function addRow(btn) {
+        const row = btn.closest('tr');
+        const clone = row.cloneNode(true);
+        clone.querySelectorAll('input, select').forEach(el => el.value = '');
+        row.parentNode.appendChild(clone);
+        updateCustomsDates();
+        updateTotals();
+    }
+
+    function deleteRow(btn) {
+        const table = document.getElementById('stockreport-body');
+        if (table.rows.length > 1) {
+            btn.closest('tr').remove();
+            updateCustomsDates();
+            updateTotals();
+        }
+    }
+
+    function updateTotals() {
+        let totals = { colli: 0, pcs: 0, pcs_total: 0, pal: 0, gross: 0, net: 0 };
+        document.querySelectorAll('#stockreport-body tr').forEach(row => {
+            totals.colli += +row.querySelector('[name="colli"]').value || 0;
+            totals.pcs += +row.querySelector('[name="pcs"]').value || 0;
+            totals.pcs_total += +row.querySelector('[name="pcs_total"]').value || 0;
+            totals.pal += +row.querySelector('[name="pal"]').value || 0;
+            totals.gross += +row.querySelector('[name="gross_kg"]').value || 0;
+            totals.net += +row.querySelector('[name="net_kg"]').value || 0;
+        });
+        document.getElementById('total-colli').textContent = totals.colli;
+        document.getElementById('total-pcs').textContent = totals.pcs;
+        document.getElementById('total-pcs-total').textContent = totals.pcs_total;
+        document.getElementById('total-pal').textContent = totals.pal;
+        document.getElementById('total-gross').textContent = totals.gross.toFixed(2);
+        document.getElementById('total-net').textContent = totals.net.toFixed(2);
+    }
+
+    function updateCustomsDates() {
+        const nonEU = [...document.querySelectorAll('#stockreport-body tr')]
+            .map(r => ({ status: r.querySelector('[name="customs_status"]').value, date: r.querySelector('[name="entrance_date"]').value }))
+            .filter(({ status, date }) => status === 'T1' && date)
+            .map(({ date }) => new Date(date));
+
+        if (nonEU.length === 0) {
+            document.getElementById('atb-frist').textContent = '—';
+            document.getElementById('free-till').textContent = '—';
+            return;
+        }
+
+        const minDate = new Date(Math.min(...nonEU));
+        const offset = 90 * 24 * 60 * 60 * 1000;
+        const result = new Date(minDate.getTime() + offset).toISOString().split('T')[0];
+
+        document.getElementById('atb-frist').textContent = result;
+        document.getElementById('free-till').textContent = result;
+    }
+
+    window.addEventListener('load', () => {
+        updateCustomsDates();
+        updateTotals();
+    });
+</script>
+<script>
+    function updateSignaturePreview(type) {
+        const selector = document.getElementById(`signature-${type}-selector`);
+        const preview = document.getElementById(`signature-${type}-preview`);
+        const filename = selector.value;
+        preview.src = `/static/images/signatures/${filename}`;
+    }
+</script>
+
+{% endblock %}

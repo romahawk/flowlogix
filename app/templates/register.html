@@ -1,0 +1,62 @@
+<!-- templates/register.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - Supply Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+        <div class="bg-white shadow-lg rounded-xl w-full max-w-2xl p-8">
+
+            <!-- 🔷 App Logo + Name Header -->
+            <div class="flex flex-col items-center mb-10">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Supply Tracker Logo"
+                    class="w-16 h-16 mb-2">
+                <h1 class="text-3xl font-bold text-blue-400 tracking-wide">Supply Tracker</h1>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div class="mb-6 text-sm text-red-600 font-medium text-center">
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <!-- 📝 Register Form -->
+            <div class="flex flex-col min-h-[300px]">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 <span class="ml-1">Create an Account</span></h2>
+                <form method="POST" action="{{ url_for('auth.register') }}"
+                    class="flex flex-col flex-grow space-y-4">
+                    <input type="text" name="username" placeholder="Username"
+                        class="w-full border px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required>
+                    <input type="password" name="password" placeholder="Password"
+                        class="w-full border px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        required>
+
+                    <div class="mt-auto flex items-center justify-between">
+                        <div class="text-sm text-gray-600">
+                            Already have an account?
+                            <a href="{{ url_for('auth.login') }}" class="text-blue-600 hover:underline ml-1">Login</a>
+                        </div>
+                        <button type="submit"
+                            class="ml-4 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition duration-200">
+                            Register
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>

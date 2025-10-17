@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Order</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- TomSelect -->
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+</head>
+
+<body class="m-0 p-0 bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen transition-colors">
+
+  {% include '_navbar.html' %}
+
+  <main class="p-6 max-w-6xl mx-auto">
+    <h1 class="text-2xl font-semibold flex items-center gap-2 mb-6">✏️ Edit Order</h1>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="mb-4 p-4 rounded bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 border border-red-300 dark:border-red-600">
+          {% for message in messages %}
+            <p>{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+      <input type="hidden" name="order_id" value="{{ order.id }}">
+
+      <!-- Order Info -->
+      <div>
+        <label for="order_date" class="block font-medium mb-1">Order Date</label>
+        <input type="text" id="order_date" name="order_date" value="{{ order.order_date }}" placeholder="DD.MM.YY"
+          class="form-input dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100" required>
+      </div>
+
+      <div>
+        <label for="order_number" class="block font-medium mb-1">Order #</label>
+        <input type="text" id="order_number" name="order_number" value="{{ order.order_number }}"
+          class="form-input dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100" required>
+      </div>
+
+      <!-- Product Name -->
+      <div class="sm:col-span-2 lg:col-span-3">
+        <label for="edit-product_name" class="block font-medium mb-1">Product Name</label>
+        <select id="edit-product_name" name="product_name"
+          class="form-input dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+          data-current="{{ order.product_name | e }}"></select>
+      </div>
+
+      <!-- Other Fields -->
+      {% for field in [
+        ('buyer', 'Buyer'), ('responsible', 'Responsible'), ('quantity', 'Quantity'),
+        ('required_delivery', 'Required Delivery'), ('terms_of_delivery', 'Terms of Delivery'),
+        ('payment_date', 'Payment Date'), ('etd', 'ETD'), ('eta', 'ETA'), ('ata', 'ATA')
+      ] %}
+      <div>
+        <label for="{{ field[0] }}" class="block font-medium mb-1">{{ field[1] }}</label>
+        <input type="{{ 'number' if field[0] == 'quantity' else 'text' }}"
+               id="{{ field[0] }}" name="{{ field[0] }}"
+               value="{{ getattr(order, field[0]) }}" step="0.01"
+               placeholder="{{ 'DD.MM.YY' if field[0] not in ['buyer', 'responsible', 'terms_of_delivery'] and field[0] != 'quantity' else '' }}"
+               class="form-input dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+      </div>
+      {% endfor %}
+
+      <div>
+        <label for="transit_status" class="block font-medium mb-1">Transit Status</label>
+        <select id="transit_status" name="transit_status"
+          class="form-input dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+          <option value="in process" {% if order.transit_status == 'in process' %}selected{% endif %}>In Process</option>
+          <option value="en route" {% if order.transit_status == 'en route' %}selected{% endif %}>En Route</option>
+          <option value="arrived" {% if order.transit_status == 'arrived' %}selected{% endif %}>Arrived</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="transport" class="block font-medium mb-1">Transport</label>
+        <select id="transport" name="transport"
+          class="form-input dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100">
+          <option value="sea" {% if order.transport == 'sea' %}selected{% endif %}>Sea</option>
+          <option value="air" {% if order.transport == 'air' %}selected{% endif %}>Air</option>
+          <option value="truck" {% if order.transport == 'truck' %}selected{% endif %}>Truck</option>
+        </select>
+      </div>
+
+      <!-- Buttons -->
+      <div class="sm:col-span-2 lg:col-span-3 flex justify-end gap-3 pt-4">
+        <a href="{{ url_for('dashboard.dashboard') }}"
+          class="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
+          Cancel
+        </a>
+        <button type="submit"
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </main>
+  
+  <!-- TomSelect Init -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const selectEl = document.getElementById("edit-product_name");
+      if (!selectEl) return;
+
+      const current = selectEl.getAttribute("data-current") || "";
+      fetch("/api/products")
+        .then(res => res.json())
+        .then(products => {
+          const unique = [...new Set([current, ...products])];
+          selectEl.innerHTML = "";
+          unique.forEach(product => {
+            const opt = document.createElement("option");
+            opt.value = product;
+            opt.textContent = product;
+            selectEl.appendChild(opt);
+          });
+          selectEl.value = current;
+
+          new TomSelect(selectEl, {
+            create: true,
+            maxOptions: 200,
+            sortField: { field: "text", direction: "asc" }
+          });
+        });
+    });
+  </script>
+</body>
+</html>

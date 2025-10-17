@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Delivered Goods</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+</head>
+
+<body class="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    {% include '_navbar.html' %}
+
+    <main class="flex flex-col h-full overflow-hidden p-4">
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="bg-green-100 border px-4 py-2 rounded my-2 text-green-800">{{ message }}</div>
+        {% endfor %}
+        {% endwith %}
+
+        <h2 class="text-2xl font-bold mb-4">🚚 Delivered Goods</h2>
+
+        <!-- Filters -->
+        <form method="GET" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-sm">
+            <select name="transport" class="rounded px-2 py-1 dark:bg-gray-800">
+                <option value="">All Transport</option>
+                <option value="air" {% if request.args.get('transport')=='air' %}selected{% endif %}>Air</option>
+                <option value="sea" {% if request.args.get('transport')=='sea' %}selected{% endif %}>Sea</option>
+                <option value="truck" {% if request.args.get('transport')=='truck' %}selected{% endif %}>Truck</option>
+            </select>
+            <select name="month" class="rounded px-2 py-1 dark:bg-gray-800">
+                <option value="">Month</option>
+                {% for m in range(1,13) %}
+                <option value="{{ m }}" {% if request.args.get('month')==m|string %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+            <select name="year" class="rounded px-2 py-1 dark:bg-gray-800">
+                <option value="">Year</option>
+                {% for y in range(2023, 2026) %}
+                <option value="{{ y }}" {% if request.args.get('year')==y|string %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            <!-- Filter Button (same logic as above) -->
+            <form method="get" class="mb-4 flex justify-end">
+                <!-- Preserve existing filters -->
+                {% for key, value in request.args.items() %}
+                {% if key != 'page' %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+                {% endfor %}
+                <button type="submit"
+                    class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
+                    <i data-lucide="filter" class="w-4 h-4"></i> Filter
+                </button>
+            </form>
+        </form>
+
+        <!-- Search & Actions Row -->
+        <div class="mb-4 flex items-center justify-between gap-2">
+            <form method="get" class="flex flex-1 items-center gap-2">
+                <!-- Preserve filters -->
+                {% for key, value in request.args.items() %}
+                {% if key != 'search' and key != 'page' %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+                {% endfor %}
+
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}"
+                    placeholder="Search delivered items"
+                    class="flex-1 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200" />
+
+                <button type="submit"
+                    class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
+                    <i data-lucide="search" class="w-4 h-4"></i> Search
+                </button>
+            </form>
+
+            {% set clear_args = request.args.to_dict() %}
+            {% if 'search' in clear_args %}{% set _ = clear_args.pop('search') %}{% endif %}
+            {% if 'page' in clear_args %}{% set _ = clear_args.pop('page') %}{% endif %}
+
+            {% if request.args.get('search') %}
+            <a href="{{ url_for('delivered.delivered') }}?{{ clear_args|urlencode }}"
+                class="flex items-center gap-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow text-sm">
+                <i data-lucide="x-circle" class="w-4 h-4"></i> Clear
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Row Count Selector -->
+        <div class="flex justify-end mb-2">
+            <form method="get" class="flex items-center gap-2">
+                {# Preserve filters #}
+                {% for key, value in request.args.items() %}
+                {% if key != 'per_page' and key != 'page' %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+                {% endfor %}
+                <label for="per_page" class="text-sm text-gray-600 dark:text-gray-300">Rows per page:</label>
+                <select name="per_page" id="per_page" onchange="this.form.submit()"
+                    class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm">
+                    <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page==20 %}selected{% endif %}>20</option>
+                </select>
+            </form>
+        </div>
+
+        <!-- Delivered Items Table -->
+        {% if delivered_items %}
+        <div class="flex-1 overflow-y-auto border rounded shadow w-full">
+            <table id="delivered-table"
+                class="w-full table-auto bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-sm">
+                <thead class="sticky top-0 z-10 bg-gray-200 dark:bg-gray-800">
+                    {% set args = request.args.to_dict() %}
+                    {% set _ = args.pop('sort', None) %}
+                    {% set _ = args.pop('direction', None) %}
+                    <tr class="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-300 uppercase">
+                        {% for col, label in [
+                        ('order_number', 'Order #'),
+                        ('product_name', 'Product Name'),
+                        ('quantity', 'Quantity'),
+                        ('delivery_date', 'Delivery Date'),
+                        ('transport', 'Transport')
+                        ] %}
+                        <th class="px-4 py-2">
+                            <a href="{{ url_for('delivered.delivered', sort=col, direction='asc' if sort_key != col or sort_dir == 'desc' else 'desc', **args) }}"
+                                class="flex items-center justify-center gap-1">
+                                {{ label }}
+                                {% if sort_key == col %}
+                                <span>{{ '↑' if sort_dir == 'asc' else '↓' }}</span>
+                                {% endif %}
+                            </a>
+                        </th>
+                        {% endfor %}
+                        <th class="px-4 py-2">Source</th>
+                        <th class="px-4 py-2">Actions</th>
+                        <th class="px-4 py-2">Notes</th>
+                        <th class="px-4 py-2">POD</th>
+                    </tr>
+
+                </thead>
+                <tbody>
+                    {% for item in delivered_items %}
+                    <tr
+                        class="text-center even:bg-gray-100 dark:even:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700">
+                        <td class="px-4 py-2">{{ item.order_number }}</td>
+                        <td class="px-4 py-2">{{ item.product_name }}</td>
+                        <td class="px-4 py-2">{{ item.quantity }}</td>
+                        <td class="px-4 py-2" data-key="delivery_date" data-sort-value="{{ item.delivery_date }}">
+                            {{ item.delivery_date | format_date }}
+                        </td>
+                        <td class="px-4 py-2 text-xs">
+                            {% if item.transport == 'air' %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">✈️ Air</span>
+                            {% elif item.transport == 'sea' %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">🚢 Sea</span>
+                            {% elif item.transport == 'truck' %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">🚚 Truck</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="px-4 py-2 text-xs">
+                            {% if item.delivery_source == 'Direct from Transit' %}
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">Direct from Transit</span>
+                            {% elif item.delivery_source == 'From Warehouse' %}
+                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">From Warehouse</span>
+                            {% else %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-2">
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                {% if current_user.role != 'superuser' %}
+                                <!-- Edit -->
+                                <a href="{{ url_for('delivered.edit_delivered', item_id=item.id) }}"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-xs rounded min-w-[90px] flex items-center gap-1 justify-center">
+                                    <i data-lucide="pencil-line"></i> Edit
+                                </a>
+
+                                <!-- Restore -->
+                                <button class="text-sm text-green-600 hover:underline restore-btn"
+                                    data-item-id="{{ item.id }}">
+                                    Restore
+                                </button>
+                                {% endif %}
+
+                                {% if item.delivery_source == 'From Warehouse' and item.order_number in
+                                reported_order_numbers %}
+                                <!-- View Report -->
+                                <button data-order-number="{{ item.order_number }}"
+                                    class="open-stockreport-modal bg-purple-800 hover:bg-purple-900 text-white px-3 py-1 text-xs rounded min-w-[90px] flex items-center gap-1 justify-center">
+                                    <i data-lucide="file-text"></i> View Report
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="px-4 py-2">
+                            {% if item.notes %}
+                            <span title="{{ item.notes }}"
+                                class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded whitespace-nowrap max-w-[150px] overflow-hidden text-ellipsis inline-block">
+                                {{ item.notes[:30] }}{% if item.notes|length > 30 %}...{% endif %}
+                            </span>
+                            {% else %}—{% endif %}
+                        </td>
+
+                        <td class="px-4 py-2 text-xs text-center">
+                            {% if current_user.role != 'superuser' %}
+                            {% if item.pod_filename %}
+                            <div class="flex items-center justify-center space-x-2">
+                                <a href="{{ url_for('upload.view_pod', filename=item.pod_filename) }}" target="_blank"
+                                    class="text-blue-600 hover:underline">📎 View</a>
+                                <form method="POST" action="{{ url_for('upload.delete_pod', item_id=item.id) }}">
+                                    <button type="submit" class="text-red-500 hover:underline"
+                                        title="Delete POD">🗑️</button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('upload.upload_pod', item_id=item.id) }}"
+                                enctype="multipart/form-data" class="flex flex-col items-center space-y-1">
+                                <label for="pod-{{ item.id }}"
+                                    class="cursor-pointer text-blue-600 text-sm hover:underline relative">📤
+                                    Upload...</label>
+                                <input id="pod-{{ item.id }}" name="file" type="file" accept=".pdf" class="hidden"
+                                    onchange="this.form.submit()">
+                            </form>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+        {% set args = request.args.to_dict() if request.args else {} %}
+        {% set filtered_args = args.copy() %}
+        {% if 'page' in filtered_args %}{% set _ = filtered_args.pop('page') %}{% endif %}
+        {% if 'per_page' in filtered_args %}{% set _ = filtered_args.pop('per_page') %}{% endif %}
+
+        <div class="mt-4 flex justify-between items-center">
+            <div class="text-sm text-gray-600 dark:text-gray-300">
+                Showing page {{ pagination.page }} of {{ pagination.pages }}
+            </div>
+            <div class="flex gap-2">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('delivered.delivered', page=pagination.prev_num, per_page=per_page, **filtered_args) }}"
+                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">⬅ Prev</a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('delivered.delivered', page=pagination.next_num, per_page=per_page, **filtered_args) }}"
+                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">Next ➡</a>
+                {% endif %}
+            </div>
+        </div>
+
+        </div>
+        {% endif %}
+
+        <!-- Single Stockreport Modal Block (do NOT duplicate) -->
+        <div id="stockreport-modal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-60 overflow-y-auto">
+            <div class="min-h-screen w-full bg-white dark:bg-gray-900 p-6">
+                <button onclick="closeModal()"
+                    class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-200 transition duration-150 z-50"
+                    title="Close Report">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white hover:text-black" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <div id="stockreport-modal-content"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Dark Mode Toggle -->
+    <script>
+        const toggle = document.getElementById('dark-mode-toggle');
+        if (toggle && localStorage.getItem('dark-mode') === 'enabled') {
+            document.documentElement.classList.add('dark');
+        }
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('dark-mode', document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
+            });
+        }
+    </script>
+
+    <!-- View Report Modal Logic (clean, deduplicated) -->
+    <script>
+        function closeModal() {
+            const modal = document.getElementById('stockreport-modal');
+            const content = document.getElementById('stockreport-modal-content');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            content.innerHTML = '';
+            document.body.classList.remove('overflow-hidden');
+            document.body.style.overflow = '';
+            document.body.style.height = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.open-stockreport-modal').forEach(button => {
+                button.addEventListener('click', async () => {
+                    const orderNumber = button.dataset.orderNumber;
+                    const modal = document.getElementById('stockreport-modal');
+                    const content = document.getElementById('stockreport-modal-content');
+
+                    try {
+                        // Show modal and lock scroll
+                        document.body.classList.add('overflow-hidden');
+                        document.body.style.overflow = 'hidden';
+                        document.body.style.height = '100vh';
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+
+                        // Load stockreport HTML content
+                        const response = await fetch(`/stockreport/view_by_order/${orderNumber}`);
+                        const html = await response.text();
+                        content.innerHTML = html;
+
+                        // Load supporting script once
+                        if (!document.querySelector('script[data-id="view-stockreport"]')) {
+                            const script = document.createElement('script');
+                            script.src = '/static/js/view_stockreport.js';
+                            script.setAttribute('data-id', 'view-stockreport');
+                            script.onload = () => console.log("✅ view_stockreport.js loaded");
+                            document.body.appendChild(script);
+                        }
+                    } catch (err) {
+                        console.error("❌ Failed to load report:", err);
+                        alert("Failed to open stockreport modal.");
+                        closeModal();
+                    }
+                });
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const restoreButtons = document.querySelectorAll(".restore-btn");
+
+            restoreButtons.forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const itemId = btn.dataset.itemId;
+
+                    const confirmed = confirm("Restore this order to Dashboard?");
+                    if (!confirmed) return;
+
+                    try {
+                        const response = await fetch(`/restore_from_delivered?item_id=${itemId}`, {
+                            method: "POST"
+                        });
+
+                        if (response.ok) {
+                            btn.closest("tr").remove();  // remove row from table
+                            alert("✅ Order restored to Dashboard.");
+                        } else {
+                            alert("❌ Failed to restore order.");
+                        }
+                    } catch (error) {
+                        console.error("Restore error:", error);
+                        alert("⚠️ An error occurred while restoring the order.");
+                    }
+                });
+            });
+        });
+    </script>
+
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>

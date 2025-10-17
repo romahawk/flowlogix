@@ -1,0 +1,71 @@
+id,warehouse_address,client,pos_no,customer_ref,user_id,order_number,product_name,quantity,delivery_source,delivery_date,transport,pod_filename,notes
+6,,,,,2,order_001,Valsartan EP,2000.0,From Warehouse,2025-04-19,,CMR_2504-03204_compressed.pdf,OSTA (iCargo) -> Pharmastart 
+7,,,,,2,order_003,Plasma collection sets,24000.0,Direct from Transit,2025-01-13,sea,CMR_2501-02987_signed.pdf,Delivered directly from dashboard
+8,,,,,2,Z000696,Pancreatin 45,8000.0,Direct from Transit,2025-01-17,sea,CMR_2501-03012_compressed.pdf,"OSTA (iCargo) - Aurora
+LKW 17.01, CMR 2501-03012"
+9,,,,,2,Z000649,Pancreatin 67,600.0,Direct from Transit,2025-01-20,sea,CMR_2501-03012_compressed.pdf,Delivered directly from dashboard
+10,,,,,2,order_013,Bicillin-5,1120.0,Direct from Transit,2025-02-12,sea,CMR_2502-03067_compressed.pdf,"OSTA (iCargo) -> Aurora
+LKW 07.02, CMR 2502-03067"
+11,,,,,2,Z000647,Thiamine HCL / B1,50.0,From Warehouse,2025-02-12,sea,CMR_2502-03067_compressed.pdf,"OSTA (iCargo) -> Aurora
+LKW 07.02, CMR 2502-03067"
+12,,,,,2,Z000646,Pyridoxine HCL / B6,75.0,From Warehouse,2025-02-12,sea,CMR_2502-03067_compressed.pdf,"OSTA (iCargo) -> Aurora
+LKW 07.02, CMR 2502-03067"
+13,,,,,2,order_006,Spironolactone,500.0,Direct from Transit,2025-02-12,sea,CMR_2502-03067_compressed.pdf,"OSTA (iCargo) -> Aurora
+LKW 07.02, CMR 2502-03067"
+14,,,,,2,Z000692,Magnesium carbonate heavy,300.0,Direct from Transit,2025-02-12,sea,CMR_2502-03067_compressed.pdf,"OSTA (iCargo) -> Aurora
+LKW 07.02, CMR 2502-03067"
+15,,,,,2,Z000709,Procaine HCL,300.0,Direct from Transit,2025-02-12,sea,CMR_2502-03067_compressed.pdf,"OSTA (iCargo) -> Aurora
+LKW 07.02, CMR 2502-03067"
+16,,,,,2,order_014,Gentamycin sulphate,228.76,Direct from Transit,2025-02-07,sea,Gentamycin-sulphate_Anariti-to-Amantea.pdf,Anariti to Amantea
+17,,,,,2,order_018,Phenibut,400.0,Direct from Transit,2025-02-07,air,,Osta (iCargo) -> Sanprom
+18,,,,,2,order_016,Plasma collection sets,24000.0,Direct from Transit,2025-04-06,,CMR_Nr._2504-03200_signed.pdf,PCC -> Biopharma
+19,,,,,2,order_017,Plasmapheresis Centrifuge Apparatus,21000.0,Direct from Transit,2025-04-17,,CMR_2504-03201_signed.pdf,PCC - Biopharma Plasma
+20,,,,,2,order_019,Enalapril Maleate,100.0,From Warehouse,2025-04-11,sea,Enalapril_Thiamine_2504-03222.pdf,Anariti to Amantea
+21,,,,,2,order_004,Plasmapheresis Centrifuge Apparatus,21000.0,Direct from Transit,2025-02-01,sea,CMR_2501-03040_signed.pdf,PCC -> Biopharma
+22,,,,,2,order_005,Paracetamol,7000.0,Direct from Transit,2025-01-17,sea,,"Pharmalogis -> Lekhim, CMR 2501-03011"
+23,,,,,2,Z000615,Paracetamol,2000.0,From Warehouse,2025-04-01,sea,CMR_2503-03180_compressed.pdf,OSTA -> Aurora
+24,,,,,2,order_009,Diphenhydramine HCL,500.0,Direct from Transit,2025-01-10,air,,Anariti -> Amantea
+25,,,,,2,order_008,RUTOCEL 60RT6,175.0,Direct from Transit,2025-01-28,sea,CMR_2501-03037_compressed.pdf,"Osta -> Aurora, LKW 24.01.25,
+CMR 2501-03037 "
+26,,,,,2,Z000645,Magnesium carbonate heavy,300.0,Direct from Transit,2025-01-28,sea,CMR_2501-03037_compressed.pdf,"Osta -> Aurora, LKW 24.01.25,
+CMR 2501-03037 "
+27,,,,,2,order_010,Torasemide,50.0,Direct from Transit,2025-01-16,sea,,Anariti -> Amantea
+28,,,,,2,Z000656,Linezolid,40.0,Direct from Transit,2025-01-17,air,,"OSTA -> Aurora, LKW 17.01.25,
+CMR 2501-03020"
+29,,,,,2,Z000706,Nitroxoline,1000.0,Direct from Transit,2025-02-28,air,,"Osta -> Aurora, LKW 28.02,
+CMR 2502-03111"
+30,,,,,2,Z000708,Nimesulide,500.0,Direct from Transit,2025-01-21,air,CMR_2501-03020_signed.pdf,"Osta -> Aurora, LKW 17.01.25,
+CMR 2501-03020"
+31,,,,,2,Z000711,Headcel 60HD6,1620.0,Direct from Transit,2025-04-28,sea,CMR_2504-03244.pdf,"Osta -> Aurora, LKW 24.04,
+CMR 2504-03244"
+32,,,,,2,Z000724,Chlorhexidine Gluconate,1000.0,Direct from Transit,2025-04-01,air,CMR_2503-03180_compressed.pdf,"Osta -> Aurora, LKW 28.03.25"
+33,,,,,2,25-002,Plasmapheresis Centrifuge Apparatus,21000.0,Direct from Transit,2025-05-20,sea,CMR_2505-03278_signed.pdf,"PCC -> Biopharma, LKW 13.05"
+34,,,,,2,25-001,Plasma collection sets,24000.0,Direct from Transit,2025-04-29,,CMR_2504-03234_signed.pdf,"PCC -> Biopharma, LKW 25.04"
+35,,,,,2,25-004,GABA sample,0.1,Direct from Transit,2025-01-29,air,,Delivered directly from dashboard
+37,,,,,2,25-006,Magnesium carbonate heavy,1200.0,Direct from Transit,2025-05-13,sea,CMR_2504-03260_signed.pdf,"Pharmalogis -> Lekhim, LKW 02.05.25"
+38,,,,,2,Z000731,Mefenamic acid,150.0,Direct from Transit,2025-02-28,air,,"OSTA -> Aurora, LKW 28.02.25,
+CMR 2502-03111"
+39,,,,,2,Z000732,Moxifloxacin HCL,75.0,Direct from Transit,2025-02-28,air,,"OSTA -> Aurora, LKW 28.02.25,
+CMR 2502-03111"
+40,,,,,2,25-010,Drotaverine HCL,600.0,Direct from Transit,2025-04-28,sea,CMR_2504-03244.pdf,"Osta -> Aurora, LKW 24.04,
+CMR 2504-03244"
+41,,,,,2,Z000733,Mefenamic acid,200.0,Direct from Transit,2025-04-28,sea,CMR_2504-03244.pdf,"Osta -> Aurora, LKW 24.04,
+CMR 2504-03244"
+42,,,,,2,25-014,Nalbuphine HCL,7.0,Direct from Transit,2025-04-28,air,CMR_2504-03244.pdf,"Osta -> Aurora, LKW 24.04,
+CMR 2504-03244"
+43,,,,,2,25-012,Betaine anhydrous,25.0,Direct from Transit,2025-04-01,air,CMR_2503-03180_compressed.pdf,"OSTA -> Aurora, LKW 28.03.25"
+44,,,,,2,25-013,Calcium Carbonate (Magnesia 444),10000.0,Direct from Transit,2025-05-02,air,,"Pharmalogis -> Lekhim, LKW 2.05.25"
+45,,,,,2,25-015,Betaines + L-Carnitine preshipment samples,0.35,Direct from Transit,2025-06-04,air,,Delivered directly from dashboard
+46,,,,,2,25-019,L-Arginine USP preshipment samples,0.18,Direct from Transit,2025-06-04,air,,Delivered directly from dashboard
+47,,,,,2,25-023,Amoxicillin trihydrate,1000.0,Direct from Transit,2025-05-05,sea,,Release to Pharmex FZ LLC
+48,,,,,2,Z000760,Mefenamic acid,150.0,Direct from Transit,2025-04-28,air,CMR_2504-03244.pdf,"Osta -> Aurora, LKW 24.04"
+49,,,,,2,25-033,Rivaroxaban,2.5,Direct from Transit,2025-05-09,air,,"Lekhin Vilnius - Lekhim, LKW 09.05.25,
+CMR 2505-03276
+"
+50,,,,,2,order_026,Unithiol sample,0.1,Direct from Transit,2025-06-06,air,,Delivered directly from dashboard
+51,,,,,2,25-022,Diphenhydramine HCL,125.0,From Warehouse,16.07.25,air,,Stocked from order
+52,iCargo,Jinling,2501-02977,,2,order_022,Oxytetracycline HCL,200.0,From Warehouse,2025-01-16,,,"OSTA, According to PL stockreport"
+53,iCargo,Anariti,2501-02985,AWB 020-63126652,2,order_021,Ketotifen,5.0,From Warehouse,2025-01-16,,,"OSTA, According to PL Stockreport"
+54,,,,,2,25-020,Cardboard AllyKing Cream,38491.0,From Warehouse,2025-06-11,,,"OSTA -> Nova Graphic, 11.06.25"
+55,,,,,2,25-020,Cardboard AllyKing Cream,10543.0,From Warehouse,2025-06-25,,,OSTA - > Nova Graphic
+56,,,,,1,25-020-2,Cardboard AllyKing Cream,10543.0,From Warehouse,18.07.25,sea,,

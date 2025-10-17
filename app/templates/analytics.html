@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-6 text-gray-900 dark:text-gray-100">
+  <h1 class="text-3xl font-bold mb-6">📊 Analytics Dashboard</h1>
+
+  <!-- Grid layout -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+    <!-- Orders by Transit Status -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-2xl p-4">
+      <h2 class="text-lg font-semibold mb-2">Orders by Transit Status</h2>
+      <canvas id="transitStatusChart" height="200"></canvas>
+    </div>
+
+    <!-- Delivery SLA Compliance -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-2xl p-4">
+      <h2 class="text-lg font-semibold mb-2">SLA Compliance</h2>
+      <canvas id="slaChart" height="200"></canvas>
+    </div>
+
+    <!-- Stock Turnover Speed -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-2xl p-4">
+      <h2 class="text-lg font-semibold mb-2">Avg. Stock Duration (days)</h2>
+      <canvas id="stockTurnoverChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Transit Efficiency -->
+<div class="bg-white dark:bg-gray-800 shadow rounded-2xl p-4 col-span-1 md:col-span-2 xl:col-span-3">
+  <h2 class="text-lg font-semibold mb-2">Transit Efficiency (ETD → ETA/ATA)</h2>
+  <canvas id="transitEfficiencyChart" height="200"></canvas>
+</div>
+
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

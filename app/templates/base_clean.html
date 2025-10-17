@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}Stock Report{% endblock %}</title>
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body class="bg-white text-gray-800 dark:text-gray-200 dark:bg-gray-900">
+
+  {% block body %}{% endblock %}
+
+  <style>
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+
+  <!-- ✅ Allow page-level scripts -->
+  {% block scripts %}{% endblock %}
+
+</body>
+
+</html>

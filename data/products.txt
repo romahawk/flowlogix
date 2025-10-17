@@ -1,0 +1,50 @@
+Amoxicillin trihydrate
+Amoxicillin + Clavulanate potassium
+Azithromycin dihydrate
+Clarithromycin
+Ciprofloxacin HCl
+Levofloxacin hemihydrate
+Doxycycline hyclate
+Metronidazole
+Ceftriaxone sodium
+Cefixime trihydrate
+Cefuroxime axetil
+Cephalexin monohydrate
+Meropenem trihydrate
+Piperacillin sodium + Tazobactam sodium
+Vancomycin HCl
+Gentamicin sulfate
+Amikacin sulfate
+Clindamycin HCl
+Linezolid
+Acyclovir
+Oseltamivir phosphate
+Fluconazole
+Itraconazole
+Voriconazole
+Ketoconazole
+Omeprazole
+Pantoprazole sodium sesquihydrate
+Esomeprazole magnesium trihydrate
+Rabeprazole sodium
+Atorvastatin calcium
+Rosuvastatin calcium
+Simvastatin
+Metformin HCl
+Sitagliptin phosphate
+Glimepiride
+Losartan potassium
+Amlodipine besylate
+Valsartan
+Hydrochlorothiazide
+Enalapril maleate
+Lisinopril dihydrate
+Carvedilol
+Metoprolol succinate
+Paracetamol (Acetaminophen)
+Ibuprofen
+Diclofenac sodium
+Naproxen
+Clopidogrel bisulfate
+Acetylsalicylic acid (Aspirin)
+Ascorbic acid

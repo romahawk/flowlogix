@@ -1,0 +1,17 @@
+id,user_id,order_date,order_number,product_name,buyer,responsible,quantity,required_delivery,terms_of_delivery,payment_date,etd,eta,ata,transit_status,transport,notes,archived_at,source,original_order_id
+1,2,19.02.25,25-012,Betaine anhydrous,AN,ED,25.0,By May 2025,CIP air Hamburg,23.02.25,08.03.25,10.03.25,10.03.25,arrived,air,,2025-06-04 11:51:46.485732,dashboard,154
+2,2,23.02.25,25-013,Calcium Carbonate (Magnesia 444),JL,SM,10000.0,By May 2025,CPT Reinbek,02.03.25,,,16.04.25,arrived,air,,2025-06-04 12:21:09.166492,dashboard,156
+3,2,02.03.25,25-015,Betaines + L-Carnitine preshipment samples,JL,AK,0.35,By April 2025,Free sample,,19.03.25,25.03.25,24.03.25,arrived,air,,2025-06-04 12:22:53.781029,dashboard,163
+4,2,02.03.25,25-019,L-Arginine USP preshipment samples,JL,AK,0.18,By April 2025,By courier,,13.03.25,18.03.25,17.03.25,arrived,air,,2025-06-04 12:23:08.493060,dashboard,158
+5,2,13.03.25,25-023,Amoxicillin trihydrate,AN,SS,1000.0,By May 2025,FOB Shanghai/by air,01.04.25,23.04.25,28.04.25,29.04.25,arrived,sea,,2025-06-04 12:24:30.693892,dashboard,172
+6,2,03.06.25,25-023,Amoxicillin trihydrate,Restored,Restored,1000.0,By February 2025,Restored,,,,05.02.25,arrived,sea,,2025-06-04 12:33:27.847999,dashboard,191
+7,2,25.03.25,Z000760,Mefenamic acid,AN,ED,150.0,ASAP,CIP air Hamburg,27.03.25,03.04.25,07.04.25,07.04.25,arrived,air,,2025-06-04 12:42:27.341441,dashboard,178
+8,2,15.04.25,25-033,Rivaroxaban,AN,SM,2.5,By May 2025,CIP air Hamburg,16.04.25,25.04.25,27.04.25,27.04.25,arrived,air,,2025-06-04 12:55:22.471055,dashboard,185
+9,2,29.12.24,order_026,Unithiol sample,AN,SM,0.1,By February 2025,By courier,05.01.25,15.01.25,22.01.25,22.01.25,arrived,air,,2025-06-06 18:17:04.038043,dashboard,135
+10,2,22.01.25,25-005,Pyrantel Pamoate,AN,AK,3500.0,By May 2025,FCA Shanghai/LCL to Tallinn,26.01.25,31.01.25,25.03.25,10.04.25,arrived,sea,,2025-07-01 10:24:42.946986,dashboard,141
+11,2,06.11.24,order_011,Doxicycline Monohydrate,AN,AK,390.0,31.01.25,CIP air Tallinn,21.12.24,04.01.25,08.01.25,11.01.25,arrived,air,,2025-07-01 10:36:12.430585,dashboard,112
+12,2,10.02.25,25-008,Anastrozole,AN,AK,8.0,By May 2025,CIP air Mumbai,15.03.25,01.04.25,02.04.25,03.04.25,arrived,air,,2025-07-01 10:42:07.290534,dashboard,148
+13,2,26.12.24,order_003,Anastrozole,AN,AK,3.4,01.03.25,CIP air Mumbai,,23.02.25,24.02.25,24.02.25,arrived,air,,2025-07-01 10:42:11.412387,dashboard,134
+14,2,23.03.25,25-030,Anastrozole,AN,AK,1328.0,By May 2025,CIP air Mumbai,,02.04.25,03.04.25,04.04.25,arrived,air,,2025-07-01 11:03:13.234561,dashboard,176
+15,1,04.07.25,test-1,Ciprofloxacin HCL,Restored,Restored,11.0,TBD,Restored,10.05.25,,,None,arrived,air,,2025-07-04 14:37:27.842477,dashboard,203
+16,1,01.07.25,test1607,Amoxicillin trihydrate,AN,SM,10.0,ASAP,CIP air Hamburg,,07.07.25,08.07.25,08.07.25,arrived,air,,2025-07-16 12:37:18.699602,dashboard,211

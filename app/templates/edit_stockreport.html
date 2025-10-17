@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Edit Stock IN Report{% endblock %}
+{% block body %}
+<div class="bg-white dark:bg-gray-800 p-6 rounded shadow max-w-full px-[50px]">
+  <div class="flex justify-between items-start">
+    <h1 class="text-2xl font-bold mb-4">Edit Stock IN Report</h1>
+    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" class="w-36 object-contain h-auto">
+    <button onclick="closeEditModal()" title="Close"
+      class="absolute top-4 right-4 text-gray-400 hover:text-red-600 text-xl font-bold z-10">
+      &times;
+    </button>
+  </div>
+
+
+  <form method="POST">
+    <!-- Warehouse Info -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-medium">Warehouse</label>
+        <select name="warehouse_address"
+          class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm" required>
+          <option value="">Select Warehouse</option>
+          {% for wh in ["Pharmalogis", "iCargo", "Quehenberger", "Systra", "Schwarze"] %}
+          <option value="{{ wh }}" {% if entry.warehouse_address==wh %}selected{% endif %}>{{ wh }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Pos. No.</label>
+        <input type="text" name="pos_no" value="{{ entry.pos_no or '' }}"
+          class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Client</label>
+        <select name="client" class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm" required>
+          <option value="">Select Client</option>
+          {% for client in ["Anariti", "Aurora", "Jinling", "Lanhai", "Lekhim Vilnius", "Lekhim Kiev", "Osta", "PCC",
+          "Pharmalogis"] %}
+          <option value="{{ client }}" {% if entry.client==client %}selected{% endif %}>{{ client }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Client Ref.</label>
+        <input type="text" name="customer_ref" value="{{ entry.customer_ref or '' }}"
+          class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+      </div>
+    </div>
+
+
+    <div class="overflow-auto">
+      <table class="w-full text-sm text-left border">
+        <thead class="bg-gray-100 dark:bg-gray-700">
+          <tr class="text-xs text-gray-700 dark:text-gray-300">
+            <th class="p-2 border w-[120px]">Entrance</th>
+            <th class="p-2 border">Article/Batch</th>
+            <th class="p-2 border">Colli</th>
+            <th class="p-2 border">Packing</th>
+            <th class="p-2 border">PCS</th>
+            <th class="p-2 border">Colli/Pal.</th>
+            <th class="p-2 border">Pcs Total</th>
+            <th class="p-2 border">Pal.</th>
+            <th class="p-2 border w-[200px]">Product</th>
+            <th class="p-2 border">Gross kg</th>
+            <th class="p-2 border">Net kg</th>
+            <th class="p-2 border w-[200px]">Sender</th>
+            <th class="p-2 border">Customs Status</th>
+            <th class="p-2 border">Stockref</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="p-2 border"><input type="date" name="entrance_date" value="{{ entry.entrance_date }}"
+                class="w-full px-2 py-1 rounded bg-white dark:bg-gray-700"></td>
+            <td class="p-2 border"><input type="text" name="article_batch" value="{{ entry.article_batch }}"
+                class="w-full px-2 py-1 rounded"></td>
+            <td class="p-2 border"><input type="number" name="colli" value="{{ entry.colli }}"
+                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+            <td class="p-2 border"><input type="text" name="packing" value="{{ entry.packing }}"
+                class="w-full px-2 py-1 rounded"></td>
+            <td class="p-2 border"><input type="number" name="pcs" value="{{ entry.pcs }}"
+                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+            <td class="p-2 border"><input type="number" name="colli_per_pal" value="{{ entry.colli_per_pal }}"
+                class="w-full px-2 py-1 rounded"></td>
+            <td class="p-2 border"><input type="number" name="pcs_total" value="{{ entry.pcs_total }}"
+                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+            <td class="p-2 border"><input type="number" name="pal" value="{{ entry.pal }}"
+                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+            <td class="whitespace-normal break-words max-w-[200px]">
+              <input type="text" name="product" value="{{ entry.product }}"
+                class="w-full px-2 py-1 rounded bg-white dark:bg-gray-700">
+            </td>
+            <td class="p-2 border"><input type="number" step="0.01" name="gross_kg" value="{{ entry.gross_kg }}"
+                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+            <td class="p-2 border"><input type="number" step="0.01" name="net_kg" value="{{ entry.net_kg }}"
+                class="w-full px-2 py-1 rounded" oninput="updateTotals()"></td>
+            <td class="p-2 border"><input type="text" name="sender" value="{{ entry.sender }}"
+                class="w-full px-2 py-1 rounded"></td>
+            <td class="p-2 border">
+              <select name="customs_status" class="w-full px-2 py-1 rounded" onchange="updateCustomsDates()">
+                <option value="EU" {% if entry.customs_status=='EU' %}selected{% endif %}>EU</option>
+                <option value="T1" {% if entry.customs_status=='T1' %}selected{% endif %}>T1</option>
+              </select>
+            </td>
+            <td class="p-2 border"><input type="text" name="stockref" value="{{ entry.stockref }}"
+                class="w-full px-2 py-1 rounded"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4 mt-6 text-sm">
+      <div>
+        <label class="block font-medium">ATB First:</label>
+        <input type="text" name="atb_frist" value="{{ atb_frist or '' }}"
+          class="w-full mt-1 border px-3 py-1 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+      </div>
+      <div>
+        <label class="block font-medium">Customs OZL:</label>
+        <input type="text" name="customs_ozl" value="{{ customs_ozl or '' }}"
+          class="w-full mt-1 border px-3 py-1 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+      </div>
+      <div>
+        <label class="block font-medium">Free till:</label>
+        <input type="text" name="free_till" value="{{ free_till or '' }}"
+          class="w-full mt-1 border px-3 py-1 rounded bg-gray-50 dark:bg-gray-700 text-sm">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-8 mt-10">
+      <div class="text-center">
+        <div class="flex justify-center items-center gap-4 mb-2">
+          <input type="date" name="signature_date_client" value="{{ signature_date_client or '' }}"
+            class="border px-3 py-1 rounded">
+          <select id="signature-client-selector" class="border rounded px-2 py-1"
+            onchange="updateSignaturePreview('client')">
+            <option value="signature1.png" {% if signature_client=='signature1.png' %}selected{% endif %}>Signature 1
+            </option>
+            <option value="signature2.png" {% if signature_client=='signature2.png' %}selected{% endif %}>Signature 2
+            </option>
+            <option value="signature3.png" {% if signature_client=='signature3.png' %}selected{% endif %}>Signature 3
+            </option>
+          </select>
+        </div>
+        <img id="signature-client-preview"
+          src="{{ url_for('static', filename='images/signatures/' + (signature_client or 'signature1.png')) }}"
+          class="mx-auto w-32 h-auto mb-2">
+        <div class="border-t border-black w-2/3 mx-auto"></div>
+        <p class="text-sm mt-1">Date & Signature</p>
+      </div>
+
+      <div class="text-center">
+        <div class="flex justify-center items-center gap-4 mb-2">
+          <input type="date" name="signature_date_warehouse" value="{{ signature_date_warehouse or '' }}"
+            class="border px-3 py-1 rounded">
+          <select id="signature-warehouse-selector" class="border rounded px-2 py-1"
+            onchange="updateSignaturePreview('warehouse')">
+            <option value="signature1.png" {% if signature_warehouse=='signature1.png' %}selected{% endif %}>Signature 1
+            </option>
+            <option value="signature2.png" {% if signature_warehouse=='signature2.png' %}selected{% endif %}>Signature 2
+            </option>
+            <option value="signature3.png" {% if signature_warehouse=='signature3.png' %}selected{% endif %}>Signature 3
+            </option>
+          </select>
+        </div>
+        <img id="signature-warehouse-preview"
+          src="{{ url_for('static', filename='images/signatures/' + (signature_warehouse or 'signature1.png')) }}"
+          class="mx-auto w-32 h-auto mb-2">
+        <div class="border-t border-black w-2/3 mx-auto"></div>
+        <p class="text-sm mt-1">Signature Warehouse</p>
+      </div>
+    </div>
+
+    <div class="mt-6 text-right">
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+        Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function updateSignaturePreview(type) {
+    const selector = document.getElementById(`signature-${type}-selector`);
+    const preview = document.getElementById(`signature-${type}-preview`);
+    preview.src = `/static/images/signatures/${selector.value}`;
+  }
+
+  function updateTotals() {
+    // Optional: live calculation
+  }
+</script>
+<script>
+  function updateSignaturePreview(type) {
+    const selector = document.getElementById(`signature-${type}-selector`);
+    const preview = document.getElementById(`signature-${type}-preview`);
+    preview.src = `/static/images/signatures/${selector.value}`;
+  }
+
+  function updateTotals() {
+    // Optional: live calculation
+  }
+
+  function closeEditModal() {
+    if (window.parent && window.parent.document) {
+      const modal = window.parent.document.getElementById('stockreport-modal');
+      const iframe = window.parent.document.getElementById('stockreport-frame');
+      if (modal && iframe) {
+        iframe.src = '';
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    } else {
+      window.close(); // fallback
+    }
+  }
+</script>
+
+{% endblock %}

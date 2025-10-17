@@ -1,0 +1,203 @@
+<header
+  class="sticky top-0 z-50 flex justify-between items-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-800 text-white shadow-md">
+  <!-- Left: Logo + Title -->
+  <div class="flex items-center space-x-3">
+    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo"
+      class="h-8 sm:h-10 rounded bg-white p-1" />
+    <h1 class="text-base sm:text-2xl font-semibold">FlowLogix</h1>
+    <a href="{{ url_for('onboarding.show_onboarding') }}"
+      class="ml-4 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition flex items-center gap-1">
+      <i data-lucide="book-open" class="w-4 h-4"></i>
+      Onboarding
+    </a>
+  </div>
+
+  <!-- Right: Navigation & Controls -->
+  <div class="flex items-center space-x-2 sm:space-x-3">
+    <a href="{{ url_for('dashboard.dashboard') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
+       {{ 'bg-yellow-500 text-white text-lg font-bold' if current_path.startswith(url_for('dashboard.dashboard')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
+       hover:bg-opacity-80 hover:shadow-md">
+      <i data-lucide="compass" class="w-5 h-5"></i>
+      Dashboard
+    </a>
+
+    <a href="{{ url_for('warehouse.warehouse') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
+       {{ 'bg-blue-600 text-white text-lg font-bold' if current_path.startswith(url_for('warehouse.warehouse')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
+       hover:bg-opacity-80 hover:shadow-md">
+      <i data-lucide="package" class="w-5 h-5"></i>
+      Warehouse
+    </a>
+
+    <a href="{{ url_for('delivered.delivered') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
+       {{ 'bg-purple-600 text-white text-lg font-bold' if current_path.startswith(url_for('delivered.delivered')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
+       hover:bg-opacity-80 hover:shadow-md">
+      <i data-lucide="truck" class="w-5 h-5"></i>
+      Delivered
+    </a>
+
+    {% if current_path.startswith(url_for('dashboard.dashboard')) %}
+    <button
+      class="w-[180px] flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition toggle-form-btn"
+      title="Add a new incoming order">
+      <i data-lucide="plus" class="w-4 h-4"></i>
+      Add New Order
+    </button>
+    {% elif current_path.startswith(url_for('warehouse.warehouse')) %}
+    <button onclick="document.getElementById('manual-order-form').classList.toggle('hidden')"
+      class="w-[180px] flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition"
+      title="Create a new manually stocked order">
+      <i data-lucide="plus" class="w-4 h-4"></i>
+      Add Manual Order
+    </button>
+    {% elif current_path.startswith(url_for('delivered.delivered')) %}
+    <div class="w-[180px]"></div>
+    {% endif %}
+
+    {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('admin.user_management') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
+   {{ 'bg-indigo-600 text-white text-lg font-bold' if current_path.startswith(url_for('admin.user_management')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
+   hover:bg-opacity-80 hover:shadow-md">
+      <i data-lucide="users" class="w-5 h-5"></i>
+      Manage Users
+    </a>
+    {% endif %}
+
+    <a href="{{ url_for('activity.activity_logs') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
+   {{ 'bg-amber-500 text-white text-lg font-bold' if current_path.startswith(url_for('activity.activity_logs')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
+   hover:bg-opacity-80 hover:shadow-md">
+      <i data-lucide="notebook-text" class="w-5 h-5"></i>
+      Activity Logs
+    </a>
+
+
+    <span class="ml-4 px-2 py-1 rounded bg-gray-700 text-white text-sm flex items-center gap-1">
+      <i data-lucide="user" class="w-4 h-4"></i>
+      {{ current_user.username }} ({{ current_user.role }})
+    </span>
+
+    <a href="{{ url_for('auth.logout') }}" title="Logout" class="text-white hover:text-red-400 ml-1">
+      <i data-lucide="log-out" class="w-5 h-5"></i>
+    </a>
+
+    <!-- Dark Mode Toggle -->
+    <button id="dark-mode-toggle"
+      class="relative inline-flex items-center h-5 w-10 sm:h-8 sm:w-16 rounded-full transition-colors duration-300 focus:outline-none flex-shrink-0"
+      aria-label="Toggle dark mode">
+      <span id="dark-mode-track"
+        class="absolute inset-0 h-5 w-10 sm:h-8 sm:w-16 rounded-full bg-gray-300 dark:bg-gray-700 transition-colors duration-300"></span>
+      <span id="dark-mode-thumb"
+        class="absolute left-1 top-1 h-3 w-3 sm:h-6 sm:w-6 rounded-full bg-gray-800 dark:bg-gray-100 transform transition-transform duration-300 shadow-md dark:shadow-white/50 dark:translate-x-5 sm:dark:translate-x-8"></span>
+    </button>
+  </div>
+
+  <!-- Onboarding Tour Modal -->
+  <div id="tourModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-lg w-full shadow-lg relative">
+      <button id="closeTourBtn"
+        class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl">&times;</button>
+      <h2 class="text-2xl font-bold mb-4">👋 Welcome to FlowLogix!</h2>
+      <div id="tourStepContent" class="text-sm text-gray-700 dark:text-gray-300 space-y-2"></div>
+      <div class="mt-6 flex justify-between">
+        <button id="prevStepBtn" class="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded text-sm"
+          disabled>Previous</button>
+        <button id="nextStepBtn" class="px-4 py-2 bg-blue-600 text-white rounded text-sm">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const steps = [
+        {
+          title: "Dashboard Overview",
+          text: "See all active orders in one place. Use filters and timeline to track delivery progress."
+        },
+        {
+          title: "Warehouse",
+          text: "Monitor goods that have arrived but not yet delivered. You can edit quantities or add notes."
+        },
+        {
+          title: "Delivered",
+          text: "Track completed deliveries, view PODs (proof of delivery), and manage history."
+        },
+        {
+          title: "Stockreport",
+          text: "Break down incoming, stocked, and delivered goods with quantities, batches, and sender details."
+        },
+        {
+          title: "Dark Mode",
+          text: "Toggle between light/dark themes from the navbar. Your preference is saved automatically!"
+        }
+      ];
+
+      const modal = document.getElementById("tourModal");
+      const content = document.getElementById("tourStepContent");
+      const prevBtn = document.getElementById("prevStepBtn");
+      const nextBtn = document.getElementById("nextStepBtn");
+      const closeBtn = document.getElementById("closeTourBtn");
+
+      let currentStep = 0;
+
+      function showStep(index) {
+        const step = steps[index];
+        content.innerHTML = `
+          <h3 class="text-lg font-semibold">${step.title}</h3>
+          <p>${step.text}</p>
+        `;
+        prevBtn.disabled = index === 0;
+        nextBtn.textContent = index === steps.length - 1 ? "Finish" : "Next";
+      }
+
+      function startTour() {
+        modal.classList.remove("hidden");
+        showStep(currentStep);
+      }
+
+      function endTour() {
+        modal.classList.add("hidden");
+        localStorage.setItem("tourCompleted", "true");
+      }
+
+      prevBtn.addEventListener("click", () => {
+        if (currentStep > 0) {
+          currentStep--;
+          showStep(currentStep);
+        }
+      });
+
+      nextBtn.addEventListener("click", () => {
+        if (currentStep < steps.length - 1) {
+          currentStep++;
+          showStep(currentStep);
+        } else {
+          endTour();
+        }
+      });
+
+      closeBtn.addEventListener("click", endTour);
+
+      if (!localStorage.getItem("tourCompleted")) {
+        startTour();
+      }
+    });
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>lucide.createIcons();</script>
+
+  <!-- Dark mode -->
+  <script>
+      const toggle = document.getElementById('dark-mode-toggle');
+
+      if (localStorage.getItem('dark-mode') === 'enabled') {
+        document.documentElement.classList.add('dark');
+      }
+
+      toggle.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        localStorage.setItem('dark-mode',
+          document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled'
+        );
+      });
+  </script>
+</header>

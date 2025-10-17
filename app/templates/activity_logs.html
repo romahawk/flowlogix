@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Activity Logs{% endblock %}
+
+{% block body %}
+<div class="p-6">
+
+  <!-- Header + Clear All Button -->
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold flex items-center gap-2">
+      <i data-lucide="file-text" class="w-6 h-6 text-gray-800 dark:text-gray-100"></i>
+      User Activity Logs
+    </h1>
+    <form method="POST" action="{{ url_for('activity.clear_logs') }}" onsubmit="return confirm('Clear ALL logs?')">
+      <button type="submit"
+              class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow text-sm">
+        <i data-lucide="x-circle" class="w-4 h-4"></i>
+        Clear All Logs
+      </button>
+    </form>
+  </div>
+
+  <!-- Row Count Selector -->
+  <div class="flex justify-end mb-2">
+    <form method="get" class="flex items-center gap-2">
+      <label for="per_page" class="text-sm text-gray-600 dark:text-gray-300">Rows per page:</label>
+      <select name="per_page" id="per_page" onchange="this.form.submit()"
+              class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm">
+        <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+        <option value="20" {% if per_page == 20 %}selected{% endif %}>20</option>
+      </select>
+    </form>
+  </div>
+
+  <!-- Log Table -->
+  {% if logs %}
+  <div class="overflow-x-auto rounded shadow border border-gray-300 dark:border-gray-700">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+        <tr>
+          <th class="p-3 text-left">Timestamp</th>
+          <th class="p-3 text-left">User</th>
+          <th class="p-3 text-left">Action</th>
+          <th class="p-3 text-left">Details</th>
+          <th class="p-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="text-gray-900 dark:text-gray-100">
+        {% for log in logs %}
+        <tr class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+          <td class="p-3">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td class="p-3">{{ log.user.username if log.user else 'System' }}</td>
+          <td class="p-3 font-semibold text-blue-600">{{ log.action }}</td>
+          <td class="p-3">{{ log.details }}</td>
+          <td class="p-3">
+            <form method="POST" action="{{ url_for('activity.delete_log', log_id=log.id) }}"
+                  onsubmit="return confirm('Delete this log entry?')">
+              <button type="submit" title="Delete entry" class="text-red-600 hover:text-red-800">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="mt-4 flex justify-between items-center">
+    <div class="text-sm text-gray-600 dark:text-gray-300">
+      Showing page {{ pagination.page }} of {{ pagination.pages }}
+    </div>
+    <div class="flex gap-2">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('activity.activity_logs', page=pagination.prev_num, per_page=per_page) }}"
+         class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">
+         <i data-lucide="chevron-left" class="inline w-4 h-4 align-middle"></i> Prev
+      </a>
+      {% endif %}
+      {% if pagination.has_next %}
+      <a href="{{ url_for('activity.activity_logs', page=pagination.next_num, per_page=per_page) }}"
+         class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">
+         Next <i data-lucide="chevron-right" class="inline w-4 h-4 align-middle"></i>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% else %}
+    <p class="text-gray-600 dark:text-gray-300">No activity logged yet.</p>
+  {% endif %}
+</div>
+
+<!-- Lucide Script -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  lucide.createIcons();
+</script>
+{% endblock %}

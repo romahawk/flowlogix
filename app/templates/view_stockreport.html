@@ -1,0 +1,227 @@
+{% extends "base_clean.html" %}
+{% block title %}Stock IN Report{% endblock %}
+{% block body %}
+
+<!-- Top Buttons -->
+<div class="flex justify-end gap-3 px-[50px] mt-6 no-print">
+  {% if entries and entries|length > 0 %}
+  <form method="POST" action="{{ url_for('warehouse.delete_stockreport', entry_id=entries[0].id) }}"
+    onsubmit="return confirm('Delete this entry?')">
+    <button type="submit" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded shadow text-sm">🗑️
+      Delete</button>
+  </form>
+  {% endif %}
+  <button id="edit-all-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded shadow text-sm">✏️
+    Edit All</button>
+  <button id="save-stockreport-btn"
+    class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded shadow text-sm hidden">💾 Save</button>
+  <button id="custom-print-btn" class="bg-gray-700 hover:bg-gray-900 text-white px-4 py-2 rounded shadow text-sm">🖨️
+    Print</button>
+</div>
+
+<!-- Report Block -->
+<div class="print-area bg-white dark:bg-gray-800 p-6 rounded shadow max-w-[1120px] mx-auto mt-6" id="pdf-report">
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h2 class="text-2xl font-bold mb-2">Stock IN Report</h2>
+      <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+        <div>
+          <span class="font-semibold">Warehouse:</span>
+          <div class="ml-2 view-mode">{{ item.warehouse_address or '—' }}</div>
+          <div class="edit-header hidden">
+            <select name="warehouse_address"
+              class="w-full mt-1 border px-2 py-1 rounded text-sm bg-white dark:bg-gray-700">
+              <option value="">Select Warehouse</option>
+              {% for option in ['Pharmalogis', 'iCargo', 'Quehenberger', 'Systra', 'Schwarze'] %}
+              <option value="{{ option }}" {% if item.warehouse_address==option %}selected{% endif %}>{{ option }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <span class="font-semibold">Pos. No.:</span>
+          <div class="ml-2 view-mode">{{ item.pos_no or '—' }}</div>
+          <div class="edit-header hidden">
+            <input type="text" name="pos_no" value="{{ item.pos_no or '' }}"
+              class="w-full mt-1 border px-2 py-1 rounded text-sm bg-white dark:bg-gray-700" />
+          </div>
+        </div>
+
+        <div>
+          <span class="font-semibold">Client:</span>
+          <div class="ml-2 view-mode">{{ item.client or '—' }}</div>
+          <div class="edit-header hidden">
+            <select name="client" class="w-full mt-1 border px-2 py-1 rounded text-sm bg-white dark:bg-gray-700">
+              <option value="">Select Client</option>
+              {% for option in ['Anariti', 'Aurora', 'Jinling', 'Lanhai', 'Lekhim Vilnius', 'Lekhim Kiev', 'Osta',
+              'PCC', 'Pharmalogis'] %}
+              <option value="{{ option }}" {% if item.client==option %}selected{% endif %}>{{ option }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <span class="font-semibold">Client Ref.:</span>
+          <div class="ml-2 view-mode">{{ item.customer_ref or '—' }}</div>
+          <div class="edit-header hidden">
+            <input type="text" name="customer_ref" value="{{ item.customer_ref or '' }}"
+              class="w-full mt-1 border px-2 py-1 rounded text-sm bg-white dark:bg-gray-700" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" class="w-36 object-contain h-auto">
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-auto print:overflow-visible">
+    <table class="w-full table-fixed text-sm text-left border" id="stockreport-table">
+      <thead class="bg-gray-100 dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-300">
+        <tr>
+          <th class="p-2 border w-[90px] whitespace-nowrap">Entrance</th>
+          <th class="p-2 border w-[120px] whitespace-nowrap">Article/Batch</th>
+          <th class="p-2 border w-[40px]">Colli</th>
+          <th class="p-2 border w-[60px]">Packing</th>
+          <th class="p-2 border w-[40px]">PCS</th>
+          <th class="p-2 border w-[60px] whitespace-nowrap">Colli/Pal.</th>
+          <th class="p-2 border w-[40px] whitespace-nowrap">Pcs Total</th>
+          <th class="p-2 border w-[40px]">Pal.</th>
+          <th class="p-2 border w-[160px] whitespace-nowrap">Product</th>
+          <th class="p-2 border w-[70px]">Gross kg</th>
+          <th class="p-2 border w-[70px]">Net kg</th>
+          <th class="p-2 border w-[140px] whitespace-nowrap">Sender</th>
+          <th class="p-2 border w-[60px]">Customs</th>
+          <th class="p-2 border w-[80px]">Stockref</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for entry in entries %}
+        <tr class="border-t" data-entry-id="{{ entry.id }}">
+          {% for field in ["entrance_date", "article_batch", "colli", "packing", "pcs", "colli_per_pal", "pcs_total",
+          "pal", "product", "gross_kg", "net_kg", "sender", "customs_status", "stockref"] %}
+          <td class="p-2 border break-words">
+            <div class="view-mode">{{ entry | lookup(field) }}</div>
+            <div class="edit-header hidden">
+              {% if field == "customs_status" %}
+              <select name="{{ field }}">
+                <option value="EU" {% if entry | lookup(field)=='EU' %}selected{% endif %}>EU</option>
+                <option value="T1" {% if entry | lookup(field)=='T1' %}selected{% endif %}>T1</option>
+              </select>
+              {% elif field in ["colli", "pcs", "colli_per_pal", "pcs_total", "pal", "gross_kg", "net_kg"] %}
+              <input type="number" name="{{ field }}" value="{{ entry | lookup(field) }}">
+              {% elif field == "entrance_date" %}
+              <input type="date" name="{{ field }}" value="{{ entry | lookup(field) }}">
+              {% else %}
+              <input type="text" name="{{ field }}" value="{{ entry | lookup(field) }}">
+              {% endif %}
+            </div>
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+
+  <!-- Customs Info -->
+  <div class="grid grid-cols-3 gap-4 mt-8 text-sm">
+    {% for label, field in [("ATB First", "atb_first"), ("Customs OZL", "customs_ozl"), ("Free till", "free_till")] %}
+    <div>
+      <label class="font-medium">{{ label }}:</label>
+      <div class="view-mode text-gray-700">{{ item | lookup(field) or "—" }}</div>
+      <div class="edit-header hidden">
+        <input type="text" name="{{ field }}" value="{{ item | lookup(field) or '' }}"
+          class="w-full mt-1 border px-2 py-1 rounded text-sm bg-white dark:bg-gray-700" />
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Signatures -->
+  <div class="grid grid-cols-2 gap-8 mt-10">
+    {% for side, date, sig in [('client', signature_date_client, signature_client), ('warehouse',
+    signature_date_warehouse, signature_warehouse)] %}
+    <div class="text-center">
+      <div class="view-mode">
+        <p class="text-sm text-gray-700 mb-1">Date: {{ date or '—' }}</p>
+        <img src="{{ url_for('static', filename='images/signatures/' + (sig or 'signature1.png')) }}" alt="Signature"
+          class="mx-auto w-32 h-auto mb-2">
+        <div class="border-t border-black w-2/3 mx-auto"></div>
+        <p class="text-sm mt-1 capitalize">Signature {{ side }}</p>
+      </div>
+      <div class="edit-header hidden space-y-2">
+        <input type="date" name="signature_date_{{ side }}" value="{{ date or '' }}"
+          class="w-full border px-3 py-1 rounded" />
+        <select name="signature_{{ side }}" class="w-full border rounded px-2 py-1">
+          {% for s in ['signature1.png', 'signature2.png', 'signature3.png'] %}
+          <option value="{{ s }}" {% if sig==s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/view_stockreport.js') }}?v={{ config['VERSION'] }}"></script>
+<style>
+  @media print {
+
+    body,
+    html {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      zoom: 100%;
+    }
+
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+
+    body * {
+      visibility: hidden;
+    }
+
+    .print-area,
+    .print-area * {
+      visibility: visible;
+    }
+
+    .print-area {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      max-width: unset;
+      padding: 0;
+    }
+
+    .print-area table {
+      page-break-inside: avoid;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    .modal,
+    .bg-opacity-50,
+    .fixed,
+    .inset-0 {
+      display: none !important;
+    }
+  }
+</style>
+{% endblock %}

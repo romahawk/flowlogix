@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Onboarding</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors">
+  {% include '_navbar.html' %}
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
+      <i data-lucide="life-buoy" class="w-7 h-7 text-blue-500"></i> Onboarding & Help Center
+    </h1>
+
+    <!-- Tab Buttons -->
+    <div class="flex gap-4 mb-6">
+      <button class="tab-button bg-blue-600 text-white dark:bg-blue-500 dark:text-white px-4 py-2 rounded" data-tab="quickstart">🚀 Quick Start</button>
+      <button class="tab-button bg-gray-300 text-black dark:bg-gray-800 dark:text-white px-4 py-2 rounded" data-tab="workflow">🔄 Workflow</button>
+      <button class="tab-button bg-gray-300 text-black dark:bg-gray-800 dark:text-white px-4 py-2 rounded" data-tab="faq">❓ FAQ</button>
+    </div>
+
+    <!-- Quick Start Tab -->
+    <div class="tab-content" data-tab="quickstart">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded shadow space-y-4 text-sm leading-relaxed">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">🚀 Quick Start Guide</h2>
+        <ol class="list-decimal pl-5 space-y-2">
+          <li>Log in with your admin-provided credentials.</li>
+          <li>Use the Dashboard to manage, add, or edit orders.</li>
+          <li>Warehouse: Track incoming goods and manage stock status (Arrived → Stocked).</li>
+          <li>Delivered tab: Track finalized orders, POD uploads, and corrections.</li>
+          <li>Activity Logs: Admins can monitor all user actions.</li>
+          <li>Dark Mode: Toggle via the navbar and persists across pages.</li>
+        </ol>
+
+        <div class="pt-4">
+          <h3 class="font-semibold text-gray-900 dark:text-white">📊 Dashboard Timeline</h3>
+          <p class="mt-1">After an order is created, it appears in both the <strong>Your Orders</strong> table and the <strong>Timeline</strong> chart.</p>
+          <p class="mt-1">The timeline provides a clear visual overview of all active orders based on their ETD and ETA or ATA.</p>
+          <ul class="list-disc pl-6 mt-2 space-y-1">
+            <li>🟠 <strong>In Process</strong> – order created but not shipped</li>
+            <li>🔵 <strong>En Route</strong> – order is on the way</li>
+            <li>🟢 <strong>Arrived</strong> – order has reached its destination</li>
+          </ul>
+          <p class="mt-2">Use the "Hide Orders" button to view only the timeline chart.</p>
+        </div>
+
+        <div class="pt-4">
+          <h3 class="font-semibold text-gray-900 dark:text-white">📌 Counter Summary</h3>
+          <ul class="list-disc pl-6 mt-2 space-y-1">
+            <li>🚚 <strong>Transit / Incoming Orders</strong> – orders that are still in progress or in transit</li>
+            <li>📦 <strong>Stocked Items / In Stock</strong> – orders moved to Warehouse</li>
+            <li>✅ <strong>Completed Deliveries</strong> – orders marked as delivered (ATA confirmed)</li>
+          </ul>
+        </div>
+
+        <p class="text-xs text-gray-500 dark:text-gray-400">Tip: Access this help anytime from the ❓ Help link.</p>
+      </div>
+    </div>
+
+    <!-- Workflow Tab -->
+    <div class="tab-content hidden" data-tab="workflow">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded shadow space-y-3 text-sm leading-relaxed">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">🔄 Workflow Guide</h2>
+        <ol class="list-decimal pl-5 space-y-2">
+          <li>Orders are created in the Dashboard.</li>
+          <li>Arrived goods are added via the Warehouse’s Stockreport modal.</li>
+          <li>Goods are transitioned to “Stocked” after QC.</li>
+          <li>“Delivered” includes POD uploads and delivery tracking.</li>
+          <li>Partial deliveries and edits are supported via the Warehouse UI.</li>
+          <li>Admins can review all steps in the Activity Logs.</li>
+        </ol>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Every stage is logged and accessible to Admins and Superusers.</p>
+      </div>
+    </div>
+
+    <!-- FAQ Tab -->
+    <div class="tab-content hidden" data-tab="faq">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded shadow space-y-4 text-sm leading-relaxed">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">❓ Frequently Asked Questions</h2>
+        <details class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <summary class="cursor-pointer font-medium">Who can access what?</summary>
+          <p class="mt-2">Admins see everything. Superusers can view all orders but cannot edit. Users only manage their assigned data.</p>
+        </details>
+        <details class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <summary class="cursor-pointer font-medium">How do I upload Proof of Delivery?</summary>
+          <p class="mt-2">Go to Delivered → click Upload POD → select a valid PDF & submit.</p>
+        </details>
+        <details class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <summary class="cursor-pointer font-medium">What is Stockreport?</summary>
+          <p class="mt-2">It’s a 3-step status tracker: Arrived → Stocked → Delivered, with timestamps and filters.</p>
+        </details>
+        <details class="bg-gray-50 dark:bg-gray-700 rounded p-4">
+          <summary class="cursor-pointer font-medium">Why is my chart empty?</summary>
+          <p class="mt-2">Verify that ETD/ETA are filled and timeline filters are correct.</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <!-- Tab Logic -->
+  <script>
+    const buttons = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tab = button.dataset.tab;
+
+        contents.forEach(content => {
+          content.classList.toggle('hidden', content.dataset.tab !== tab);
+        });
+
+        buttons.forEach(btn => {
+          btn.classList.remove('bg-blue-600', 'dark:bg-blue-500', 'text-white');
+          btn.classList.add('bg-gray-300', 'dark:bg-gray-800', 'dark:text-white');
+        });
+
+        button.classList.add('bg-blue-600', 'dark:bg-blue-500', 'text-white');
+        button.classList.remove('bg-gray-300', 'dark:bg-gray-800');
+      });
+    });
+
+    // Default to Quickstart
+    document.querySelector('.tab-button[data-tab="quickstart"]').click();
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLogix</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        // Set dark mode from localStorage before page paint
+        (function () {
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    <!-- TomSelect -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+</head>
+
+<body class="m-0 p-0 bg-gray-100 dark:bg-gray-900">
+    {% include '_navbar.html' %}
+
+    <!-- Add New Order Form (Collapsible) -->
+    <div id="add-order-section" class="form-section p-6 bg-white dark:bg-gray-900 rounded-lg shadow-md" style="display: none;">
+        <h2 class="text-xl font-semibold mb-4">Add New Order</h2>
+
+        <!-- dummy inputs to fully disable browser autofill -->
+        <input type="text" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" autocomplete="username">
+        <input type="password" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" autocomplete="new-password">
+
+        <form id="add-order-form" class="add-order-form grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" autocomplete="off">
+            <div class="form-group">
+                <label for="order_date" class="block text-sm font-medium">Order Date:</label>
+                <input type="date" id="order_date" name="order_date" required
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+            </div>
+
+            <div class="form-group">
+                <label for="order_number" class="block text-sm font-medium">Order #:</label>
+                <input type="text" id="order_number" name="order_number" required list="orderno-options"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+                       placeholder="e.g. PO-2025-001">
+            </div>
+
+            <div class="form-group">
+                <label for="product_name" class="block text-sm font-medium">Product Name:</label>
+                <select id="product_name" name="product_name" placeholder="Select or type a product" class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200" required>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="buyer" class="block text-sm font-medium">Buyer:</label>
+                <input type="text" id="buyer" name="buyer" required list="buyer-options"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+                       placeholder="Select buyer">
+                <datalist id="buyer-options">
+                    <option value="Acme Clinics GmbH">
+                    <option value="HealthPlus Ltd">
+                    <option value="BioCare AG">
+                    <option value="Nova Pharma BV">
+                    <option value="Medico Supplies Sp. z o.o.">
+                    <option value="Wellness Partners SA">
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label for="responsible" class="block text-sm font-medium">Responsible:</label>
+                <input type="text" id="responsible" name="responsible" required list="responsible-options"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+                       placeholder="Select person">
+                <datalist id="responsible-options">
+                    <option value="Anna Kramer">
+                    <option value="Ben Schneider">
+                    <option value="Carla Rossi">
+                    <option value="David Weber">
+                    <option value="Elena Nowak">
+                    <option value="Felix Bauer">
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label for="quantity" class="block text-sm font-medium">Quantity:</label>
+                <input type="number" id="quantity" name="quantity" step="0.01" required
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+            </div>
+
+            <div class="form-group">
+                <label for="required_delivery" class="block text-sm font-medium">Required Delivery:</label>
+                <div class="relative">
+                    <input type="text" id="required_delivery" name="required_delivery" required
+                           class="mt-1 p-2 w-full border rounded-md bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                           placeholder="e.g. ASAP, Q2 2025" list="delivery-options">
+                    <datalist id="delivery-options">
+                        <option value="ASAP">
+                        <option value="By January {{ now.year }}">
+                        <option value="By February {{ now.year }}">
+                        <option value="By March {{ now.year }}">
+                        <option value="By April {{ now.year }}">
+                        <option value="By May {{ now.year }}">
+                        <option value="By June {{ now.year }}">
+                        <option value="By July {{ now.year }}">
+                        <option value="By August {{ now.year }}">
+                        <option value="By September {{ now.year }}">
+                        <option value="By October {{ now.year }}">
+                        <option value="By November {{ now.year }}">
+                        <option value="By December {{ now.year }}">
+                        <option value="By Q1 {{ now.year }}">
+                        <option value="By Q2 {{ now.year }}">
+                        <option value="By Q3 {{ now.year }}">
+                        <option value="By Q4 {{ now.year }}">
+                        <option value="By End of {{ now.year }}">
+                    </datalist>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="terms_of_delivery" class="block text-sm font-medium">Terms of Delivery:</label>
+                <input type="text" id="terms_of_delivery" name="terms_of_delivery" required list="incoterm-options"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+                       placeholder="Incoterm (e.g., FOB)">
+                <datalist id="incoterm-options">
+                    <option value="EXW">
+                    <option value="FCA">
+                    <option value="CPT">
+                    <option value="CIP">
+                    <option value="DAP">
+                    <option value="DPU">
+                    <option value="DDP">
+                    <option value="FAS">
+                    <option value="FOB">
+                    <option value="CFR">
+                    <option value="CIF">
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label for="payment_date" class="block text-sm font-medium">Payment Date:</label>
+                <input type="date" id="payment_date" name="payment_date"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+            </div>
+
+            <div class="form-group">
+                <label for="etd" class="block text-sm font-medium">ETD:</label>
+                <input type="date" id="etd" name="etd"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+            </div>
+
+            <div class="form-group">
+                <label for="eta" class="block text-sm font-medium">ETA:</label>
+                <input type="date" id="eta" name="eta"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+            </div>
+
+            <div class="form-group">
+                <label for="ata" class="block text-sm font-medium">ATA:</label>
+                <input type="date" id="ata" name="ata"
+                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+            </div>
+
+            <div class="form-group">
+                <label for="transit_status" class="block text-sm font-medium">Transit Status:</label>
+                <select id="transit_status" name="transit_status" required
+                        class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+                    <option value="in process">In Process</option>
+                    <option value="en route">En Route</option>
+                    <option value="arrived">Arrived</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="transport" class="block text-sm font-medium">Transport:</label>
+                <select id="transport" name="transport" required
+                        class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+                    <option value="sea">Sea</option>
+                    <option value="air">Air</option>
+                    <option value="truck">Truck</option>
+                </select>
+            </div>
+
+            <div class="form-group col-span-1 sm:col-span-2 lg:col-span-3">
+                <button type="submit"
+                        class="w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
+                    Add Order
+                </button>
+            </div>
+        </form>
+
+        <!-- datalist for order numbers (kept outside the form to avoid reflow) -->
+        <datalist id="orderno-options">
+            <option value="PO-2025-001">
+            <option value="PO-2025-002">
+            <option value="PO-2025-003">
+            <option value="PO-2025-010">
+            <option value="PO-2025-011">
+            <option value="PO-2025-012">
+        </datalist>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="border px-4 py-2 rounded my-2 text-sm
+                      {% if category == 'danger' %} bg-red-100 text-red-800 border-red-300
+                      {% elif category == 'success' %} bg-green-100 text-green-800 border-green-300
+                      {% elif category == 'warning' %} bg-yellow-100 text-yellow-800 border-yellow-300
+                      {% else %} bg-gray-100 text-gray-800 border-gray-300 {% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Dashboard Content -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 shadow rounded p-4 text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">🚚 Transit / Incoming Orders</div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ in_transit_count }}</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow rounded p-4 text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">📦 Stocked Items / In Stock</div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ warehouse_count }}</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow rounded p-4 text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">✅ Completed Deliveries</div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ delivered_count }}</div>
+        </div>
+    </div>
+
+    <div class="p-2 sm:p-2 space-y-6">
+        <!-- Your Orders Section (Collapsible) -->
+        <div class="p-2 sm:p-2 space-y-2">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg sm:text-xl font-semibold tracking-wide border-b border-gray-700 pb-1 mb-3 mt-6 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                    <i data-lucide="boxes"></i>
+                    Your Orders
+                </h2>
+                <button id="toggle-orders-btn" class="text-sm font-medium px-3 py-1 rounded-md transition 
+                        text-gray-700 dark:text-gray-300 hover:text-white hover:bg-gray-600 
+                        dark:hover:text-white dark:hover:bg-gray-500 focus:outline-none shadow-sm">
+                    Hide Orders
+                </button>
+            </div>
+
+            <div id="your-orders-section" class="orders-section">
+                <!-- Search bar -->
+                <div class="mb-4">
+                    <input type="text" id="search-dashboard" placeholder="Search orders (product, order #, status)"
+                           class="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+                </div>
+
+                <div class="orders-table-container overflow-x-auto">
+                    <table class="min-w-[800px] bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+                        <thead class="bg-gray-200 dark:bg-gray-800">
+                            <tr class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs sm:text-sm">
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="order_date">Order Date <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="order_number">Order # <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="product_name">Product Name <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="buyer">Buyer <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="responsible">Responsible <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="quantity">Quantity <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="required_delivery">Required Delivery <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="terms_of_delivery">Terms of Delivery <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="payment_date">Payment Date <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="etd">ETD <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="eta">ETA <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="ata">ATA <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="transit_status">Transit Status <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="transport">Transport <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-300 dark:divide-gray-600 bg-gray-100 dark:bg-gray-900">
+                            <!-- Table rows will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <h2 class="text-lg sm:text-xl font-semibold tracking-wide border-b border-gray-700 pb-1 mb-3 mt-6 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <i data-lucide="activity"></i>
+            Timeline
+        </h2>
+
+        <!-- Year Filter Dropdown -->
+        <div class="mb-4">
+            <label for="year-filter" class="text-sm font-medium text-gray-900 dark:text-gray-500 mr-2">Select Year:</label>
+            <select id="year-filter" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+        <div id="year-warning" class="hidden text-yellow-700 bg-yellow-100 border border-yellow-400 px-4 py-2 rounded text-sm mt-4">
+            ⚠️ Some orders may exist for other years. Adjust the year filter to see them.
+        </div>
+
+        <!-- Legend for Timeline Chart -->
+        <div class="legend flex space-x-4 mb-4">
+            <span class="legend-item cursor-pointer" data-status="in process">
+                <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(255, 165, 0, 0.8);"></span> In Process
+            </span>
+            <span class="legend-item cursor-pointer" data-status="en route">
+                <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(0, 123, 255, 0.8);"></span> En Route
+            </span>
+            <span class="legend-item cursor-pointer" data-status="arrived">
+                <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(144, 238, 144, 0.8);"></span> Arrived
+            </span>
+        </div>
+        <div id="timeline-loading" style="overflow-y: auto; max-height: 800px;" class="text-gray-600 dark:text-gray-400">Loading timeline...</div>
+        <div class="timeline-container bg-gray-100 dark:bg-gray-900 p-4 rounded-lg shadow-md">
+            <canvas id="timelineChart"></canvas>
+        </div>
+        <div class="flex justify-center space-x-4 mt-4">
+            <button id="back-btn" class="load-more-btn bg-blue-500 hover:bg-blue-700 text-gray-600 dark:text-gray-300 font-bold py-2 px-4 rounded hidden" onclick="loadPreviousOrders()">Back</button>
+            <button id="load-more-btn" class="load-more-btn bg-blue-500 hover:bg-blue-700 text-gray-600 dark:text-gray-300 font-bold py-2 px-4 rounded hidden" onclick="loadMoreOrders()">Load More</button>
+        </div>
+    </div>
+
+    <script> window.currentUserRole = "{{ current_user.role }}"; </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const toggleOrdersBtn = document.getElementById("toggle-orders-btn");
+            const yourOrdersSection = document.getElementById("your-orders-section");
+
+            toggleOrdersBtn.addEventListener("click", () => {
+                if (yourOrdersSection.style.display === "none") {
+                    yourOrdersSection.style.display = "block";
+                    toggleOrdersBtn.textContent = "Hide Orders";
+                } else {
+                    yourOrdersSection.style.display = "none";
+                    toggleOrdersBtn.textContent = "Show Orders";
+                }
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchInput = document.getElementById("search-dashboard");
+            const orderRows = document.querySelectorAll("table tbody tr");
+            searchInput.addEventListener("input", () => {
+                const term = searchInput.value.toLowerCase();
+                orderRows.forEach(row => {
+                    const rowText = row.textContent.toLowerCase();
+                    row.style.display = rowText.includes(term) ? "" : "none";
+                });
+            });
+        });
+    </script>
+
+    <script> lucide.createIcons(); </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const toggle = document.getElementById("dark-mode-toggle");
+            if (toggle) {
+                toggle.addEventListener("click", () => {
+                    const isDark = document.documentElement.classList.toggle("dark");
+                    localStorage.setItem("dark-mode", isDark ? "enabled" : "disabled");
+                });
+            }
+        });
+    </script>
+
+    <!-- DEMO helpers: clear pre-filled inputs + generate a fresh Order # on focus -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const form = document.getElementById("add-order-form");
+            if (!form) return;
+
+            // Clear visible inputs and prevent browser autofill
+            form.querySelectorAll("input, select, textarea").forEach(el => {
+                el.setAttribute("autocomplete", "off");
+                if (["text", "number", "date", "search", "email", "tel"].includes(el.type || "")) {
+                    el.value = "";
+                }
+            });
+
+            // Default incoterm suggestion
+            const incoterm = document.getElementById("terms_of_delivery");
+            if (incoterm && !incoterm.value) incoterm.value = "FOB";
+
+            // Auto-generate an Order # when the field is focused and empty
+            const orderInput = document.getElementById("order_number");
+            function nextOrderNumber() {
+                const yyyy = new Date().getFullYear();
+                const n = Number(localStorage.getItem("demo_po_counter") || "100") + 1;
+                localStorage.setItem("demo_po_counter", String(n));
+                return `PO-${yyyy}-${String(n).padStart(3,"0")}`;
+            }
+            if (orderInput) {
+                orderInput.addEventListener("focus", () => {
+                    if (!orderInput.value) orderInput.value = nextOrderNumber();
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
