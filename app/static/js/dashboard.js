@@ -1,21 +1,34 @@
+/* ========= FlowLogix Dashboard (API-integrated) =========
+   - Loads years from /api/years
+   - Loads orders for selected year from /api/orders?year=YYYY
+   - Preserves existing UI/UX (sorting, filters, timeline, TomSelect, etc.)
+========================================================= */
+
 let showOrderDate = true;
 let showPaymentDate = true;
-let allOrders = []; // Global to store all orders
-let selectedYear = null; // Global to store selected year
-let visibleStatuses = ["in process", "en route", "arrived"]; // Global to store visible statuses
-let chartInstance = null; // Global to store Chart.js instance
-let sortDirection = { order_date: "desc" }; // Global sort direction
-let lastSortKey = "order_date"; // default sort
-let lastSortDirection = "desc"; // default direction
+let allOrders = []; // holds orders for the currently selected year
+let selectedYear = null; // selected year value (string or number)
+let visibleStatuses = ["in process", "en route", "arrived"];
+let chartInstance = null;
+let sortDirection = { order_date: "desc" };
+let lastSortKey = "order_date";
+let lastSortDirection = "desc";
 
-// isDarkMode
+/* -------------------- small helper -------------------- */
+async function getJSON(url) {
+  const res = await fetch(url, { credentials: "same-origin" });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.json();
+}
+
+/* -------------------- dark mode -------------------- */
 function isDarkMode() {
   return document.documentElement.classList.contains("dark");
 }
 
 function getChartColors() {
   return {
-    text: isDarkMode() ? "#E5E7EB" : "#374151", // light gray / slate
+    text: isDarkMode() ? "#E5E7EB" : "#374151",
     grid: isDarkMode() ? "#4B5563" : "#D1D5DB",
     title: isDarkMode() ? "#F9FAFB" : "#111827",
   };
@@ -25,7 +38,6 @@ function initDarkModeToggle() {
   const toggle = document.getElementById("dark-mode-toggle");
   if (!toggle) return;
 
-  // Load saved preference
   if (localStorage.getItem("dark-mode") === "enabled") {
     document.documentElement.classList.add("dark");
   }
@@ -35,7 +47,6 @@ function initDarkModeToggle() {
     const enabled = document.documentElement.classList.contains("dark");
     localStorage.setItem("dark-mode", enabled ? "enabled" : "disabled");
 
-    // Re-render timeline to update chart theme
     const filteredData = filterData(
       allOrders,
       document.getElementById("order-filter")?.value || ""
@@ -45,44 +56,27 @@ function initDarkModeToggle() {
   });
 }
 
-// Helper functions needed by filterData and renderTimeline
+/* -------------------- date helpers -------------------- */
 function parseDate(dateStr) {
   try {
-    if (!dateStr || typeof dateStr !== "string") {
-      console.error(`parseDate: Invalid date string: ${dateStr}`);
-      throw new Error("Invalid date string");
-    }
-    // Handle both dd.mm.yy and yyyy-mm-dd formats
+    if (!dateStr || typeof dateStr !== "string") throw new Error("Invalid date");
+
     let day, month, year;
     if (dateStr.includes(".")) {
+      // dd.mm.yy
       [day, month, year] = dateStr.split(".").map(Number);
-      year = 2000 + year;
+      year = year < 100 ? 2000 + year : year;
     } else if (dateStr.includes("-")) {
+      // yyyy-mm-dd
       [year, month, day] = dateStr.split("-").map(Number);
     } else {
-      throw new Error("Unsupported date format");
+      throw new Error("Unsupported format");
     }
-    if (
-      !day ||
-      !month ||
-      !year ||
-      day < 1 ||
-      day > 31 ||
-      month < 1 ||
-      month > 12
-    ) {
-      console.error(`parseDate: Invalid date components: ${dateStr}`);
-      throw new Error("Invalid date components");
-    }
-    const date = new Date(year, month - 1, day);
-    if (isNaN(date.getTime())) {
-      console.error(`parseDate: Invalid date: ${dateStr}`);
-      throw new Error("Invalid date");
-    }
-    console.log(`parseDate: Successfully parsed ${dateStr} to ${date}`);
-    return date;
-  } catch (error) {
-    console.error(`parseDate: Error parsing date: ${dateStr}`, error);
+
+    const d = new Date(year, month - 1, day);
+    if (isNaN(d.getTime())) throw new Error("NaN date");
+    return d;
+  } catch (_) {
     return null;
   }
 }
@@ -93,9 +87,7 @@ function getYearFromDate(dateStr) {
 }
 
 function getWeekNumber(date) {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
-  );
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -108,98 +100,55 @@ function getStartOfWeek(weekNum, year) {
   const firstMonday =
     dayOfWeek === 1
       ? firstDayOfYear
-      : new Date(
-          firstDayOfYear.setDate(
-            firstDayOfYear.getDate() + ((8 - dayOfWeek) % 7)
-          )
-        );
+      : new Date(firstDayOfYear.setDate(firstDayOfYear.getDate() + ((8 - dayOfWeek) % 7)));
   const startOfWeek = new Date(firstMonday);
   startOfWeek.setDate(startOfWeek.getDate() + (weekNum - 1) * 7);
   return startOfWeek;
 }
 
-// Filter data function
+
+/* -------------------- filtering -------------------- */
 function filterData(data, query) {
-  console.log(
-    `filterData: Called with query: "${query}", selectedYear: ${selectedYear}, visibleStatuses: ${visibleStatuses}`
-  );
-  if (!data || !Array.isArray(data)) {
-    console.warn("filterData: Invalid or empty data array");
-    return [];
-  }
-  query = query.toLowerCase().trim();
-  const filtered = data.filter((order) => {
-    console.log(
-      `filterData: Processing order: ${order.order_number || "unknown"}, ETD: ${
-        order.etd
-      }, Transit Status: ${order.transit_status}`
-    );
+  if (!data || !Array.isArray(data)) return [];
+  query = (query || "").toLowerCase().trim();
 
-    // Check year filter
-    const orderYear =
-      parseInt(order.delivery_year) || getYearFromDate(order.etd);
-    if (!orderYear || (selectedYear && orderYear !== parseInt(selectedYear))) {
-      console.log(
-        `filterData: Order ${order.order_number} excluded - Year mismatch: ${orderYear} !== ${selectedYear}`
-      );
-      return false;
-    }
+  return data.filter((order) => {
+    const orderYear = parseInt(order.delivery_year) || getYearFromDate(order.etd);
+    if (!orderYear || (selectedYear && orderYear !== parseInt(selectedYear))) return false;
 
-    // Check transit status
-    if (!visibleStatuses.includes(order.transit_status)) {
-      console.log(
-        `filterData: Order ${order.order_number} excluded - Status not visible: ${order.transit_status}`
-      );
-      return false;
-    }
+    if (!visibleStatuses.includes(order.transit_status)) return false;
 
-    // Filter by query (order_date and order_number)
     let orderDate = order.order_date || "";
     if (orderDate.includes("-")) {
-      const [year, month, day] = orderDate.split("-");
-      orderDate = `${day}.${month}.${year.slice(-2)}`;
+      const [y, m, d] = orderDate.split("-");
+      orderDate = `${d}.${m}.${y.slice(-2)}`;
     }
     const orderNumber = (order.order_number || "").toLowerCase();
-    orderDate = orderDate.toLowerCase();
-    const matches = query
-      ? orderNumber.includes(query) || orderDate.includes(query)
-      : true;
 
-    console.log(
-      `filterData: Order ${order.order_number} - Date: ${orderDate}, Number: ${orderNumber}, Query: ${query}, Matches: ${matches}`
-    );
-    return matches;
+    return query ? orderNumber.includes(query) || orderDate.toLowerCase().includes(query) : true;
   });
-  console.log(`filterData: Returned ${filtered.length} orders`);
-  return filtered;
 }
 
-// Render timeline function (pagination removed)
+/* -------------------- timeline (Chart.js) -------------------- */
 function renderTimeline(data) {
-  console.log("renderTimeline: Function called with data:", data);
   const loadingIndicator = document.getElementById("timeline-loading");
   const canvas = document.getElementById("timelineChart");
-
-  if (!canvas) {
-    console.error("renderTimeline: Canvas element not found");
-    return;
-  }
+  if (!canvas) return;
 
   if (loadingIndicator) loadingIndicator.style.display = "block";
   canvas.style.display = "none";
 
   if (!Array.isArray(data) || data.length === 0) {
-    console.warn("renderTimeline: No data provided");
     if (loadingIndicator) {
       loadingIndicator.textContent =
         data.length === 0
           ? `No orders found for ${selectedYear || "selected year"}`
-          : `Loading...`;
+          : "Loading...";
       loadingIndicator.style.display = "block";
     }
-    canvas.style.display = "none";
-    return;
   }
+
+  if (!Array.isArray(data) || data.length === 0) return;
 
   const year = parseInt(selectedYear) || new Date().getFullYear();
   const yearStart = new Date(year, 0, 1);
@@ -212,22 +161,17 @@ function renderTimeline(data) {
   data.forEach((order) => {
     const startDate = parseDate(order.etd);
     let endDate = order.ata ? parseDate(order.ata) : parseDate(order.eta);
-    if (endDate) {
-      endDate.setDate(endDate.getDate() + 7); // extend bar by 1 day
-    }
-
+    if (endDate) endDate.setDate(endDate.getDate() + 7);
 
     if (!startDate || !endDate) return;
 
-    const orderYear =
-      parseInt(order.delivery_year) || getYearFromDate(order.etd);
+    const orderYear = parseInt(order.delivery_year) || getYearFromDate(order.etd);
     if (orderYear !== year) return;
 
     const clippedStartDate = startDate < yearStart ? yearStart : startDate;
     const clippedEndDate = endDate > yearEnd ? yearEnd : endDate;
 
     const status = (order.transit_status || "").toLowerCase().trim();
-
     const color =
       {
         "in process": "rgba(255, 165, 0, 0.8)",
@@ -243,25 +187,14 @@ function renderTimeline(data) {
       borderWidth: 1,
     });
 
-    const transportIcon =
-      {
-        sea: "🚢",
-        air: "✈️",
-        truck: "🚚",
-      }[order.transport] || order.transport;
-
-    labels.push(
-      `${transportIcon} ${order.product_name} (${order.order_number})`
-    );
+    const transportIcon = { sea: "🚢", air: "✈️", truck: "🚚" }[order.transport] || order.transport;
+    labels.push(`${transportIcon} ${order.product_name} (${order.order_number})`);
     displayIndex += 1;
   });
 
   if (chartData.length === 0) {
-    console.warn("renderTimeline: No valid orders found to display");
     if (loadingIndicator) {
-      loadingIndicator.textContent = `No valid orders found for ${
-        selectedYear || "selected year"
-      }`;
+      loadingIndicator.textContent = `No valid orders found for ${selectedYear || "selected year"}`;
       loadingIndicator.style.display = "block";
     }
     canvas.style.display = "none";
@@ -270,10 +203,7 @@ function renderTimeline(data) {
 
   const heightPerOrder = 30;
   const headerHeight = 50;
-  const canvasHeight = Math.max(
-    200,
-    chartData.length * heightPerOrder + headerHeight
-  );
+  const canvasHeight = Math.max(200, chartData.length * heightPerOrder + headerHeight);
   const timelineContainer = canvas.parentElement;
   timelineContainer.style.height = `${canvasHeight}px`;
   canvas.style.height = `${canvasHeight}px`;
@@ -340,7 +270,7 @@ function renderTimeline(data) {
           ticks: {
             callback: (_, i) => labels[i],
             color: colors.text,
-            font: { size: 16, weight: "500" }, // Increased from 12 to 16 (30% increase)
+            font: { size: 16, weight: "500" },
             autoSkip: false,
             padding: 5,
           },
@@ -383,20 +313,12 @@ function renderTimeline(data) {
       maintainAspectRatio: false,
     },
   });
-
-  console.log("renderTimeline: Chart rendered successfully");
 }
 
-// ... Following code ...
-
-// Modified sortData to support forced direction
+/* -------------------- sorting -------------------- */
 function sortData(data, key, forceDescending = false) {
-  if (!sortDirection[key]) {
-    sortDirection[key] = "desc"; // Default to descending
-  }
-  if (!forceDescending) {
-    sortDirection[key] = sortDirection[key] === "asc" ? "desc" : "asc";
-  }
+  if (!sortDirection[key]) sortDirection[key] = "desc";
+  if (!forceDescending) sortDirection[key] = sortDirection[key] === "asc" ? "desc" : "asc";
   const direction = forceDescending ? "desc" : sortDirection[key];
   lastSortKey = key;
   lastSortDirection = direction;
@@ -404,28 +326,13 @@ function sortData(data, key, forceDescending = false) {
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     const thKey = th.getAttribute("data-sort");
     const indicator = th.querySelector(".sort-indicator");
-    if (indicator) {
-      if (thKey === key) {
-        indicator.textContent = direction === "asc" ? "↑" : "↓";
-      } else {
-        indicator.textContent = "";
-      }
-    }
+    if (indicator) indicator.textContent = thKey === key ? (direction === "asc" ? "↑" : "↓") : "";
   });
 
   return [...data].sort((a, b) => {
     let valA = a[key] || "";
     let valB = b[key] || "";
-    if (
-      [
-        "order_date",
-        "required_delivery",
-        "payment_date",
-        "etd",
-        "eta",
-        "ata",
-      ].includes(key)
-    ) {
+    if (["order_date", "required_delivery", "payment_date", "etd", "eta", "ata"].includes(key)) {
       valA = parseDate(valA) || new Date(0);
       valB = parseDate(valB) || new Date(0);
     } else if (key === "quantity") {
@@ -435,14 +342,11 @@ function sortData(data, key, forceDescending = false) {
       valA = valA.toString().toLowerCase();
       valB = valB.toString().toLowerCase();
     }
-    if (direction === "asc") {
-      return valA > valB ? 1 : -1;
-    } else {
-      return valA < valB ? 1 : -1;
-    }
+    return direction === "asc" ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
   });
 }
 
+/* -------------------- DOM ready -------------------- */
 document.addEventListener("DOMContentLoaded", function () {
   const orderDateHeader = document.querySelector('th[data-sort="order_date"]');
   if (orderDateHeader) {
@@ -451,170 +355,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   Chart.register(window["chartjs-plugin-annotation"]);
+  initDarkModeToggle();
 
-  function populateYearDropdown(orders) {
-    const yearFilter = document.getElementById("year-filter");
-    if (!yearFilter) {
-      console.error("populateYearDropdown: Year filter dropdown not found");
-      return;
-    }
-
-    const years = [
-      ...new Set(
-        orders
-          .map((order) => parseInt(order.delivery_year))
-          .filter((year) => year)
-      ),
-    ].sort((a, b) => b - a);
-    console.log("populateYearDropdown: Unique years found:", years);
-
-    if (years.length === 0) {
-      yearFilter.innerHTML =
-        '<option value="" disabled selected>No orders available</option>';
-      selectedYear = null;
-      return;
-    }
-
-    yearFilter.innerHTML = years
-      .map((year) => `<option value="${year}">${year}</option>`)
-      .join("");
-
-    if (!selectedYear || !years.includes(parseInt(selectedYear))) {
-      selectedYear = years[0].toString();
-      yearFilter.value = selectedYear;
-    } else {
-      yearFilter.value = selectedYear;
-    }
-    console.log("populateYearDropdown: Selected year set to:", selectedYear);
-  }
-
-  function updateTable(data) {
-    const tbody = document.querySelector("table tbody");
-    if (!tbody) {
-      console.error("updateTable: Table tbody not found");
-      return;
-    }
-    tbody.innerHTML = "";
-    if (data.length === 0) {
-      const row = document.createElement("tr");
-      row.innerHTML = `<td colspan="15" class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200 text-center">No orders found</td>`;
-      tbody.appendChild(row);
-    } else {
-      data.forEach((order) => {
-        const transportIcon =
-          {
-            sea: "🚢",
-            air: "✈️",
-            truck: "🚚",
-          }[order.transport] || order.transport;
-        const row = document.createElement("tr");
-        row.classList.add(
-          "bg-gray-100",
-          "dark:bg-gray-900",
-          "hover:bg-gray-200",
-          "dark:hover:bg-gray-700"
-        );
-        row.innerHTML = `
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200" title="Delivery Year: ${
-      order.delivery_year
-    }">${order.order_date}</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.order_number || "—"
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.product_name
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.buyer
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.responsible
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.quantity
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.required_delivery || "—"
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.terms_of_delivery || "—"
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.payment_date || "—"
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.etd || "—"
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.eta || "—"
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.ata || ""
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${
-      order.transit_status
-    }</td>
-    <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${transportIcon}</td>
-    <td class="px-2 py-2 text-center text-xs sm:text-sm">
-      <div class="flex flex-col sm:flex-row sm:justify-center gap-1 sm:gap-2">
-        ${
-          window.currentUserRole !== "superuser"
-            ? `
-          <button 
-            type="button" 
-            class="edit-order text-blue-600 hover:text-blue-800" 
-            data-id="${order.id}" 
-            title="Edit Order"
-          >
-            <i data-lucide="pencil" class="w-4 h-4"></i>
-          </button>
-          <button 
-            type="button" 
-            class="delete-order text-red-600 hover:text-red-800" 
-            data-id="${order.id}" 
-            title="Delete Order"
-          >
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
-          ${
-            order.transit_status === "arrived"
-              ? `
-            <form method="POST" action="/stock_order/${order.id}">
-              <button 
-                type="submit" 
-                class="text-yellow-600 hover:text-yellow-800" 
-                title="Move to Warehouse"
-              >
-                <i data-lucide="warehouse" class="w-4 h-4"></i>
-              </button>
-            </form>
-            <form method="POST" action="/deliver_direct/${order.id}">
-              <button 
-                type="submit" 
-                class="text-green-600 hover:text-green-800" 
-                title="Mark as Delivered"
-              >
-                <i data-lucide="truck" class="w-4 h-4"></i>
-              </button>
-            </form>
-            `
-              : ""
-          }
-          `
-            : ""
-        }
-      </div>
-    </td>
-
-`;
-        tbody.appendChild(row);
-      });
-    }
-    lucide.createIcons();
-    attachActionHandlers(); 
-    console.log("updateTable: Table updated with data:", data);
-  }
-
+  /* ---------- products select (TomSelect) ---------- */
   const initializeProductSelect = () => {
     const selectEl = document.getElementById("product_name");
     if (!selectEl) return;
@@ -622,211 +365,252 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch("/api/products")
       .then((res) => res.json())
       .then((products) => {
-        // Clean up existing TomSelect instance
-        if (selectEl.tomselect) {
-          selectEl.tomselect.destroy();
-        }
-
-        // Clear existing options
+        if (selectEl.tomselect) selectEl.tomselect.destroy();
         selectEl.innerHTML = "";
-
-        // Add new options
-        products.forEach((product) => {
-          const option = document.createElement("option");
-          option.value = product;
-          option.textContent = product;
-          selectEl.appendChild(option);
+        products.forEach((p) => {
+          const opt = document.createElement("option");
+          opt.value = p;
+          opt.textContent = p;
+          selectEl.appendChild(opt);
         });
-
-        // Initialize TomSelect after populating
         new TomSelect(selectEl, {
           create: true,
-          sortField: {
-            field: "text",
-            direction: "asc",
-          },
+          sortField: { field: "text", direction: "asc" },
           maxOptions: 200,
         });
-
-        console.log("✅ TomSelect ready with", products.length, "products");
       })
-      .catch((err) => {
-        console.error("❌ Error fetching products:", err);
-      });
+      .catch((err) => console.error("products load error:", err));
   };
-
   initializeProductSelect();
 
-
+  /* ---------- dashboard search ---------- */
   function setupDashboardSearch() {
     const searchInput = document.getElementById("search-dashboard");
     if (!searchInput) return;
-
     searchInput.addEventListener("input", () => {
       const query = searchInput.value.toLowerCase();
       const rows = document.querySelectorAll("table tbody tr");
-
       rows.forEach((row) => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(query) ? "" : "none";
       });
     });
-
-    initDarkModeToggle();
   }
-
   setupDashboardSearch();
 
-  function fetchAndRender() {
-    console.log("fetchAndRender: Fetching orders from /api/orders...");
-    fetch("/api/orders")
-      .then((response) => {
-        console.log("fetchAndRender: Fetch response received:", response);
-        if (!response.ok) {
-          throw new Error(
-            `Network response was not ok: ${response.status} ${response.statusText}`
-          );
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("fetchAndRender: Fetched orders:", data.slice(0, 5)); // Log first 5 for brevity
-        allOrders = data.map((order) => ({
-          ...order,
-          order_date: order.order_date.includes("-")
-            ? order.order_date.split("-").reverse().join(".")
-            : order.order_date,
-          etd: order.etd.includes("-")
-            ? order.etd.split("-").reverse().join(".")
-            : order.etd,
-          eta: order.eta.includes("-")
-            ? order.eta.split("-").reverse().join(".")
-            : order.eta,
-          ata:
-            order.ata && order.ata.includes("-")
-              ? order.ata.split("-").reverse().join(".")
-              : order.ata,
-          required_delivery:
-            order.required_delivery && order.required_delivery.includes("-")
-              ? order.required_delivery.split("-").reverse().join(".")
-              : order.required_delivery,
-          payment_date:
-            order.payment_date && order.payment_date.includes("-")
-              ? order.payment_date.split("-").reverse().join(".")
-              : order.payment_date,
-          delivery_year: parseInt(order.delivery_year) || null,
-        }));
+  /* ---------- YEAR + ORDERS loading via new APIs ---------- */
 
-        const yearsAvailable = [...new Set(allOrders.map(o => o.delivery_year).filter(Boolean))].map(Number);
-        const selectedYearNum = parseInt(selectedYear);
+  // 1) Insert years into the dropdown
+  function populateYearDropdownFromAPI(years) {
+    const yearFilter = document.getElementById("year-filter");
+    if (!yearFilter) return;
 
-        const yearWarning = document.getElementById("year-warning");
-        if (yearWarning) {
-          if (!yearsAvailable.includes(selectedYearNum)) {
-            yearWarning.textContent = `⚠️ Some orders exist in other years: ${yearsAvailable.join(", ")}. Adjust the year filter to see them.`;
-            yearWarning.classList.remove("hidden");
-          } else {
-            yearWarning.textContent = "";
-            yearWarning.classList.add("hidden");
-          }
-        }
+    yearFilter.innerHTML = "";
+    if (!years || years.length === 0) {
+      yearFilter.innerHTML = '<option value="" disabled selected>No orders available</option>';
+      selectedYear = null;
+      return;
+    }
+    years.forEach((y) => {
+      const opt = document.createElement("option");
+      opt.value = y;
+      opt.textContent = y;
+      yearFilter.appendChild(opt);
+    });
 
-
-        populateYearDropdown(allOrders);
-        if (!selectedYear) {
-          console.warn(
-            "fetchAndRender: No orders available to set a selected year"
-          );
-          updateTable([]);
-          renderTimeline([]);
-          return;
-        }
-        const filteredData = filterData(
-          allOrders,
-          document.getElementById("order-filter")?.value || ""
-        );
-        const sortedData = sortData(
-          filteredData,
-          lastSortKey,
-          lastSortDirection === "desc"
-        );
-        updateTable(sortedData);
-        renderTimeline(sortedData);
-      })
-      .catch((error) => {
-        console.error("fetchAndRender: Error fetching or rendering:", error);
-        const loadingIndicator = document.getElementById("timeline-loading");
-        if (loadingIndicator) {
-          loadingIndicator.style.display = "none";
-        }
-        const canvas = document.getElementById("timelineChart");
-        if (canvas) {
-          canvas.style.display = "none";
-        }
-      });
+    // default to the first entry (API already returns sorted; if not, this is still fine)
+    if (!selectedYear || !years.includes(parseInt(selectedYear))) {
+      selectedYear = years[0];
+      yearFilter.value = selectedYear;
+    } else {
+      yearFilter.value = selectedYear;
+    }
   }
 
-  console.log("Initial render of dashboard");
-  fetchAndRender();
+  // 2) Fetch orders for the selected year
+  async function loadOrdersForYear(year) {
+    try {
+      const data = await getJSON(`/api/orders?year=${encodeURIComponent(year)}`);
+      const rows = data.orders || [];
 
-  document.querySelectorAll("table th[data-sort]").forEach((header) => {
-    header.addEventListener("click", () => {
-      const key = header.getAttribute("data-sort");
-      console.log(`Sorting by ${key}`);
+      // normalize incoming rows for the existing UI
+      allOrders = rows.map((order) => ({
+        ...order,
+        order_date: order.order_date && order.order_date.includes("-")
+          ? order.order_date.split("-").reverse().join(".")
+          : order.order_date || "",
+        etd: order.etd && order.etd.includes("-")
+          ? order.etd.split("-").reverse().join(".")
+          : order.etd || "",
+        eta: order.eta && order.eta.includes("-")
+          ? order.eta.split("-").reverse().join(".")
+          : order.eta || "",
+        ata: order.ata && order.ata.includes("-")
+          ? order.ata.split("-").reverse().join(".")
+          : order.ata || "",
+        required_delivery: order.required_delivery && order.required_delivery.includes("-")
+          ? order.required_delivery.split("-").reverse().join(".")
+          : order.required_delivery || "",
+        payment_date: order.payment_date && order.payment_date.includes("-")
+          ? order.payment_date.split("-").reverse().join(".")
+          : order.payment_date || "",
+        delivery_year: parseInt(year) || null,
+      }));
+
+      const yearWarning = document.getElementById("year-warning");
+      if (yearWarning) yearWarning.classList.add("hidden");
+
+      if (!selectedYear) {
+        updateTable([]);
+        renderTimeline([]);
+        return;
+      }
+
       const filteredData = filterData(
         allOrders,
         document.getElementById("order-filter")?.value || ""
       );
-      const sortedData = sortData(filteredData, key); // User-initiated sort toggles direction
+      const sortedData = sortData(filteredData, lastSortKey, lastSortDirection === "desc");
+      updateTable(sortedData);
+      renderTimeline(sortedData);
+    } catch (err) {
+      console.error("loadOrdersForYear error:", err);
+      updateTable([]);
+      renderTimeline([]);
+    }
+  }
+
+  // 3) Initial bootstrap: years -> selectedYear -> orders
+  async function bootstrapYearsAndOrders() {
+    try {
+      const { years } = await getJSON("/api/years");
+      populateYearDropdownFromAPI(years || []);
+      if (selectedYear) await loadOrdersForYear(selectedYear);
+    } catch (err) {
+      console.error("bootstrapYearsAndOrders error:", err);
+      populateYearDropdownFromAPI([]);
+      updateTable([]);
+      renderTimeline([]);
+    }
+  }
+
+  // ↓ This replaced the previous "fetchAndRender" that called /api/orders with no year
+  bootstrapYearsAndOrders();
+
+  /* ---------- table render (unchanged) ---------- */
+  function updateTable(data) {
+    const tbody = document.querySelector("table tbody");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    if (!data || data.length === 0) {
+      const row = document.createElement("tr");
+      row.innerHTML =
+        `<td colspan="15" class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200 text-center">No orders found</td>`;
+      tbody.appendChild(row);
+      return;
+    }
+
+    data.forEach((order) => {
+      const transportIcon = { sea: "🚢", air: "✈️", truck: "🚚" }[order.transport] || order.transport;
+      const row = document.createElement("tr");
+      row.classList.add("bg-gray-100","dark:bg-gray-900","hover:bg-gray-200","dark:hover:bg-gray-700");
+
+      row.innerHTML = `
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200" title="Delivery Year: ${order.delivery_year}">${order.order_date || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.order_number || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.product_name || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.buyer || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.responsible || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.quantity ?? "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.required_delivery || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.terms_of_delivery || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.payment_date || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.etd || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.eta || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.ata || ""}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.transit_status || "—"}</td>
+        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${transportIcon}</td>
+        <td class="px-2 py-2 text-center text-xs sm:text-sm">
+          <div class="flex flex-col sm:flex-row sm:justify-center gap-1 sm:gap-2">
+            ${
+              window.currentUserRole !== "superuser"
+                ? `
+              <button type="button" class="edit-order text-blue-600 hover:text-blue-800" data-id="${order.id}" title="Edit Order"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button type="button" class="delete-order text-red-600 hover:text-red-800" data-id="${order.id}" title="Delete Order"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              ${
+                order.transit_status === "arrived"
+                  ? `
+                <form method="POST" action="/stock_order/${order.id}">
+                  <button type="submit" class="text-yellow-600 hover:text-yellow-800" title="Move to Warehouse"><i data-lucide="warehouse" class="w-4 h-4"></i></button>
+                </form>
+                <form method="POST" action="/deliver_direct/${order.id}">
+                  <button type="submit" class="text-green-600 hover:text-green-800" title="Mark as Delivered"><i data-lucide="truck" class="w-4 h-4"></i></button>
+                </form>
+                `
+                  : ""
+              }
+              `
+                : ""
+            }
+          </div>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    lucide.createIcons();
+    attachActionHandlers();
+  }
+
+  /* ---------- sorting clicks ---------- */
+  document.querySelectorAll("table th[data-sort]").forEach((header) => {
+    header.addEventListener("click", () => {
+      const key = header.getAttribute("data-sort");
+      const filteredData = filterData(
+        allOrders,
+        document.getElementById("order-filter")?.value || ""
+      );
+      const sortedData = sortData(filteredData, key);
       updateTable(sortedData);
       renderTimeline(sortedData);
     });
   });
 
+  /* ---------- free text filter ---------- */
   const orderFilterInput = document.getElementById("order-filter");
   if (orderFilterInput) {
     orderFilterInput.addEventListener("input", (e) => {
-      console.log(
-        "order-filter: Input event triggered, query:",
-        e.target.value
-      );
       const query = e.target.value;
       const filteredData = filterData(allOrders, query);
-      console.log("order-filter: Filtered data length:", filteredData.length);
       const sortedData = sortData(filteredData, "order_date", true);
       updateTable(sortedData);
       renderTimeline(sortedData);
     });
-  } else {
-    console.error("order-filter: Input element not found in DOM");
   }
 
-  document.getElementById("year-filter").addEventListener("change", (e) => {
-    selectedYear = e.target.value;
-    sortDirection = { order_date: "desc" };
-    const orderDateHeader = document.querySelector(
-      'th[data-sort="order_date"]'
-    );
-    if (orderDateHeader) {
-      const indicator = orderDateHeader.querySelector(".sort-indicator");
-      if (indicator) indicator.textContent = "↓";
-    }
-    document.querySelectorAll("th[data-sort]").forEach((th) => {
-      if (th.getAttribute("data-sort") !== "order_date") {
-        const indicator = th.querySelector(".sort-indicator");
-        if (indicator) indicator.textContent = "";
+  /* ---------- year change => reload from /api/orders?year= ---------- */
+  const yearFilterEl = document.getElementById("year-filter");
+  if (yearFilterEl) {
+    yearFilterEl.addEventListener("change", async (e) => {
+      selectedYear = e.target.value;
+      sortDirection = { order_date: "desc" };
+      const orderDateHeader = document.querySelector('th[data-sort="order_date"]');
+      if (orderDateHeader) {
+        const indicator = orderDateHeader.querySelector(".sort-indicator");
+        if (indicator) indicator.textContent = "↓";
       }
+      document.querySelectorAll("th[data-sort]").forEach((th) => {
+        if (th.getAttribute("data-sort") !== "order_date") {
+          const indicator = th.querySelector(".sort-indicator");
+          if (indicator) indicator.textContent = "";
+        }
+      });
+      await loadOrdersForYear(selectedYear);
     });
-    console.log(`Year filter changed to: ${selectedYear}`);
-    const filteredData = filterData(
-      allOrders,
-      document.getElementById("order-filter")?.value || ""
-    );
-    const sortedData = sortData(filteredData, "order_date", true);
-    updateTable(sortedData);
-    renderTimeline(sortedData);
-  });
+  }
 
+  /* ---------- legend toggle ---------- */
   document.querySelectorAll(".legend-item").forEach((item) => {
     item.addEventListener("click", () => {
       const status = item.getAttribute("data-status");
@@ -837,7 +621,6 @@ document.addEventListener("DOMContentLoaded", function () {
         visibleStatuses.push(status);
         item.classList.remove("opacity-50");
       }
-      console.log(`Legend toggled, visibleStatuses: ${visibleStatuses}`);
       const filteredData = filterData(
         allOrders,
         document.getElementById("order-filter")?.value || ""
@@ -848,6 +631,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  /* ---------- add/edit/delete handlers (unchanged) ---------- */
   const addForm = document.getElementById("add-order-form");
   if (addForm) {
     addForm.addEventListener("submit", function (event) {
@@ -857,91 +641,54 @@ document.addEventListener("DOMContentLoaded", function () {
       const orderDate = document.getElementById("order_date").value;
       const etd = document.getElementById("etd").value;
       const eta = document.getElementById("eta").value;
-      const requiredDelivery =
-        document.getElementById("required_delivery").value;
+      const requiredDelivery = document.getElementById("required_delivery").value;
 
-      if (!requiredDelivery.trim()) {
-        alert("Required Delivery cannot be empty.");
-        return;
-      }
-
-      if (isNaN(quantity) || quantity <= 0) {
-        alert("Quantity must be a positive number (decimals allowed).");
-        return;
-      }
-
-      if (etd && orderDate && orderDate > etd) {
-        alert("Order Date cannot be later than ETD.");
-        return;
-      }
-
-      if (etd && eta && etd > eta) {
-        alert("ETD cannot be later than ETA.");
-        return;
-      }
+      if (!requiredDelivery.trim()) return alert("Required Delivery cannot be empty.");
+      if (isNaN(quantity) || quantity <= 0) return alert("Quantity must be a positive number.");
+      if (etd && orderDate && orderDate > etd) return alert("Order Date cannot be later than ETD.");
+      if (etd && eta && etd > eta) return alert("ETD cannot be later than ETA.");
 
       const formData = new FormData(addForm);
-      const dateFields = [
-        "order_date",
-        "required_delivery",
-        "payment_date",
-        "etd",
-        "eta",
-        "ata",
-      ];
-      const convertedFormData = new FormData();
-
-      for (let [key, value] of formData.entries()) {
-        if (dateFields.includes(key) && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-          const [year, month, day] = value.split("-");
-          value = `${day}.${month}.${year.slice(2)}`;
+      const dateFields = ["order_date","required_delivery","payment_date","etd","eta","ata"];
+      const converted = new FormData();
+      for (let [k, v] of formData.entries()) {
+        if (dateFields.includes(k) && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+          const [y, m, d] = v.split("-");
+          v = `${d}.${m}.${y.slice(2)}`;
         }
-        convertedFormData.append(key, value);
+        converted.append(k, v);
       }
 
-      fetch("/add_order", {
-        method: "POST",
-        body: convertedFormData,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Add response:", data);
+      fetch("/add_order", { method: "POST", body: converted })
+        .then((r) => r.json())
+        .then(async (data) => {
           if (data.success) {
             alert("Order added successfully!");
             addForm.reset();
-            console.log("Calling fetchAndRender after adding order");
-            fetchAndRender();
+            await loadOrdersForYear(selectedYear); // refresh
           } else {
             alert("Error adding order: " + (data.message || "Unknown error"));
           }
         })
-        .catch((error) => {
-          console.error("Error adding order:", error);
+        .catch((err) => {
+          console.error("add error", err);
           alert("Error adding order. Please try again.");
         });
     });
-  } else {
-    console.warn("add-order-form not found in the DOM");
   }
 
   document.addEventListener("click", function (event) {
     if (event.target.classList.contains("edit-order")) {
       event.preventDefault();
       const orderId = event.target.getAttribute("data-id");
-      fetch(`/api/orders`)
+      fetch(`/api/orders?year=${encodeURIComponent(selectedYear)}`)
         .then((response) => response.json())
-        .then((data) => {
+        .then((payload) => {
+          const data = payload.orders || [];
           const order = data.find((o) => o.id == orderId);
           if (order) {
             document.getElementById("edit-order-id").value = order.id;
-            const dateFields = [
-              "order_date",
-              "required_delivery",
-              "payment_date",
-              "etd",
-              "eta",
-              "ata",
-            ];
+            const dateFields = ["order_date","required_delivery","payment_date","etd","eta","ata"];
             dateFields.forEach((field) => {
               const value = order[field];
               const input = document.getElementById(`edit-${field}`);
@@ -951,50 +698,36 @@ document.addEventListener("DOMContentLoaded", function () {
               }
             });
 
-            document.getElementById("edit-order_number").value =
-              order.order_number;
+            document.getElementById("edit-order_number").value = order.order_number;
             const productSelect = document.getElementById("edit-product_name");
 
             if (productSelect) {
               fetch("/api/products")
                 .then((res) => res.json())
                 .then((products) => {
-                  if (productSelect.tomselect) {
-                    productSelect.tomselect.destroy();
-                  }
-
+                  if (productSelect.tomselect) productSelect.tomselect.destroy();
                   productSelect.innerHTML = "";
-                  const allProducts = [
-                    ...new Set([order.product_name, ...products]),
-                  ];
-
-                  allProducts.forEach((product) => {
-                    const option = document.createElement("option");
-                    option.value = product;
-                    option.textContent = product;
-                    productSelect.appendChild(option);
+                  const allProducts = [...new Set([order.product_name, ...products])];
+                  allProducts.forEach((p) => {
+                    const opt = document.createElement("option");
+                    opt.value = p;
+                    opt.textContent = p;
+                    productSelect.appendChild(opt);
                   });
-
                   const tom = new TomSelect(productSelect, {
                     create: true,
                     sortField: { field: "text", direction: "asc" },
                     maxOptions: 200,
                   });
-
                   tom.setValue(order.product_name);
                 });
-            } else {
-              console.warn("⚠️ edit-product_name field not found in DOM");
             }
 
             document.getElementById("edit-buyer").value = order.buyer;
-            document.getElementById("edit-responsible").value =
-              order.responsible;
+            document.getElementById("edit-responsible").value = order.responsible;
             document.getElementById("edit-quantity").value = order.quantity;
-            document.getElementById("edit-terms_of_delivery").value =
-              order.terms_of_delivery;
-            document.getElementById("edit-transit_status").value =
-              order.transit_status;
+            document.getElementById("edit-terms_of_delivery").value = order.terms_of_delivery;
+            document.getElementById("edit-transit_status").value = order.transit_status;
             document.getElementById("edit-transport").value = order.transport;
             document.getElementById("edit-order-modal").style.display = "flex";
           }
@@ -1007,18 +740,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const orderId = event.target.getAttribute("data-id");
       fetch(`/delete_order/${orderId}`, { method: "GET" })
-        .then((response) => response.json())
-        .then((data) => {
+        .then((r) => r.json())
+        .then(async (data) => {
           if (data.success) {
             alert("Order deleted successfully!");
-            console.log("Calling fetchAndRender after deleting order");
-            fetchAndRender();
+            await loadOrdersForYear(selectedYear);
           } else {
             alert("Error deleting order: " + (data.message || "Unknown error"));
           }
         })
-        .catch((error) => {
-          console.error("Error deleting order:", error);
+        .catch((err) => {
+          console.error("delete error", err);
           alert("Error deleting order. Please try again.");
         });
     }
@@ -1029,69 +761,41 @@ document.addEventListener("DOMContentLoaded", function () {
     editForm.addEventListener("submit", function (event) {
       event.preventDefault();
 
-      const quantity = parseFloat(
-        document.getElementById("edit-quantity").value
-      );
+      const quantity = parseFloat(document.getElementById("edit-quantity").value);
       const orderDate = document.getElementById("edit-order_date").value;
       const etd = document.getElementById("edit-etd").value;
       const eta = document.getElementById("edit-eta").value;
 
-      if (isNaN(quantity) || quantity <= 0) {
-        alert("Quantity must be a positive number (decimals allowed).");
-        return;
-      }
-
-      if (etd && orderDate && orderDate > etd) {
-        alert("Order Date cannot be later than ETD.");
-        return;
-      }
-
-      if (etd && eta && etd > eta) {
-        alert("ETD cannot be later than ETA.");
-        return;
-      }
+      if (isNaN(quantity) || quantity <= 0) return alert("Quantity must be positive.");
+      if (etd && orderDate && orderDate > etd) return alert("Order Date cannot be later than ETD.");
+      if (etd && eta && etd > eta) return alert("ETD cannot be later than ETA.");
 
       const formData = new FormData(editForm);
-      const dateFields = [
-        "order_date",
-        "required_delivery",
-        "payment_date",
-        "etd",
-        "eta",
-        "ata",
-      ];
-
-      const convertedFormData = new FormData();
-
-      for (let [key, value] of formData.entries()) {
-        if (dateFields.includes(key) && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-          const [year, month, day] = value.split("-");
-          value = `${day}.${month}.${year.slice(2)}`;
+      const dateFields = ["order_date","required_delivery","payment_date","etd","eta","ata"];
+      const converted = new FormData();
+      for (let [k, v] of formData.entries()) {
+        if (dateFields.includes(k) && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+          const [y, m, d] = v.split("-");
+          v = `${d}.${m}.${y.slice(2)}`;
         }
-        convertedFormData.append(key, value);
+        converted.append(k, v);
       }
 
       const orderId = document.getElementById("edit-order-id").value;
-
-      fetch(`/edit_order/${orderId}`, {
-        method: "POST",
-        body: convertedFormData,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Edit response:", data);
+      fetch(`/edit_order/${orderId}`, { method: "POST", body: converted })
+        .then((r) => r.json())
+        .then(async (data) => {
           if (data.success) {
             alert("Order updated successfully!");
             editForm.reset();
             document.getElementById("edit-order-modal").style.display = "none";
-            console.log("Calling fetchAndRender after editing order");
-            fetchAndRender();
+            await loadOrdersForYear(selectedYear);
           } else {
             alert("Error editing order: " + (data.message || "Unknown error"));
           }
         })
-        .catch((error) => {
-          console.error("Error editing order:", error);
+        .catch((err) => {
+          console.error("edit error", err);
           alert("Error editing order. Please try again.");
         });
     });
@@ -1106,43 +810,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.addEventListener("click", function (event) {
     const modal = document.getElementById("edit-order-modal");
-    if (event.target === modal) {
-      modal.style.display = "none";
-    }
+    if (event.target === modal) modal.style.display = "none";
   });
 
   const toggleFormBtn = document.querySelector(".toggle-form-btn");
   const addOrderSection = document.getElementById("add-order-section");
-
   if (toggleFormBtn && addOrderSection) {
     toggleFormBtn.addEventListener("click", () => {
       const isHidden =
-        addOrderSection.style.display === "none" ||
-        addOrderSection.style.display === "";
-
+        addOrderSection.style.display === "none" || addOrderSection.style.display === "";
       addOrderSection.style.display = isHidden ? "block" : "none";
-      toggleFormBtn.textContent = isHidden
-        ? "Hide Add Order Form"
-        : "Add New Order";
-
-      // ✅ Only initialize when form becomes visible
-      if (isHidden) {
-        initializeProductSelect();
-      }
+      toggleFormBtn.textContent = isHidden ? "Hide Add Order Form" : "Add New Order";
+      if (isHidden) initializeProductSelect();
     });
-  }  
+  }
 
-  // Add window resize handler to re-render chart
   window.addEventListener("resize", () => {
     const filteredData = filterData(
       allOrders,
       document.getElementById("order-filter")?.value || ""
     );
-    const sortedData = sortData(
-      filteredData,
-      lastSortKey,
-      lastSortDirection === "desc"
-    );
+    const sortedData = sortData(filteredData, lastSortKey, lastSortDirection === "desc");
     renderTimeline(sortedData);
   });
 
@@ -1163,9 +851,8 @@ document.addEventListener("DOMContentLoaded", function () {
               method: "POST",
               headers: { "X-Requested-With": "XMLHttpRequest" },
             });
-
             if (response.ok) {
-              window.location.reload();
+              await loadOrdersForYear(selectedYear);
             } else {
               alert("Error deleting order.");
             }
@@ -1176,4 +863,4 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   }
-})
+});
