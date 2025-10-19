@@ -165,3 +165,6 @@ def ensure_seed():
             db.session.add(order)
 
         db.session.commit()
+
+if __name__ == "__main__":
+    ensure_seed()
