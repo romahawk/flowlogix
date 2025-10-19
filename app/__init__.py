@@ -60,17 +60,19 @@ def create_app():
 
     @app.before_request
     def demo_seed_on_first_request():
-        # Run once per process
+        """
+        If DEMO_MODE and AUTO_SEED_ON_EMPTY=true, seed once when the first request arrives
+        and the Orders table is empty. Uses app.seed_boot.ensure_seed() which is idempotent.
+        """
         if app.config.get('_DEMO_SEEDED'):
             return
         if not (app.config.get("DEMO_MODE") and os.getenv("AUTO_SEED_ON_EMPTY", "true").lower() == "true"):
             app.config['_DEMO_SEEDED'] = True
             return
         try:
-            # if empty, seed; mark as done either way so we don't re-check every request
             if Order.query.count() == 0:
-                from app.demo_seed import seed_orders
-                seed_orders()
+                from app.seed_boot import ensure_seed
+                ensure_seed()
         except Exception as e:
             app.logger.warning(f"Auto-seed skipped: {e}")
         finally:
@@ -202,17 +204,27 @@ def create_app():
     # ---------------- CLI: demo seed/reset/clear ----------------
     @app.cli.command('demo-seed')
     def demo_seed():
-        from app.demo_seed import seed_orders
-        username, n = seed_orders()
-        print(f"Seeded {n} demo orders. Login: {username} / demo1234")
+        """Seed demo data if empty (idempotent)."""
+        try:
+            from app.seed_boot import ensure_seed
+            before = Order.query.count()
+            ensure_seed()
+            after = Order.query.count()
+            print(f"Seed complete. Orders: {before} -> {after}")
+        except Exception as e:
+            print(f"Seed failed: {e}")
 
     @app.cli.command('demo-reset')
     def demo_reset():
-        from app.demo_seed import seed_orders
-        Order.query.delete()
-        db.session.commit()
-        username, n = seed_orders()
-        print(f"Demo reset complete. Seeded {n}. Login: {username} / demo1234")
+        """Clear all orders and re-seed demo data."""
+        try:
+            cleared = Order.query.delete()
+            db.session.commit()
+            from app.seed_boot import ensure_seed
+            ensure_seed()
+            print(f"Demo reset complete. Deleted {cleared} rows and re-seeded.")
+        except Exception as e:
+            print(f"Reset failed: {e}")
 
     @app.cli.command('demo-clear')
     def demo_clear():
