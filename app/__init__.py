@@ -46,6 +46,18 @@ def create_app():
     login_manager.init_app(app)
     Migrate(app, db)
 
+    # --- Auto-seed on cold start (no Start Command needed) ---
+    if os.getenv("AUTO_SEED_ON_EMPTY", "true").lower() == "true":
+        with app.app_context():
+            try:
+                if Order.query.count() == 0:
+                    from app.seed_boot import ensure_seed
+                    ensure_seed()  # idempotent
+                    app.logger.info("Auto-seed: completed on startup.")
+            except Exception as e:
+                app.logger.warning(f"Auto-seed skipped on startup: {e}")
+
+
     # IMPORTANT: delay importing routes until a (test) request context exists
     with app.test_request_context('/'):
         from app.routes import register_routes   # delayed import prevents context error
