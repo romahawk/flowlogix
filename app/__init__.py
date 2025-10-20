@@ -4,8 +4,7 @@ from datetime import datetime
 from flask import Flask, request, abort, redirect
 from flask_login import LoginManager, current_user, login_user
 from flask_migrate import Migrate
-from flask import has_request_context
-
+from flask import has_request_context, request, redirect, abort
 from .database import db, init_db
 from .models import User, Order
 
@@ -86,20 +85,15 @@ def create_app():
             return
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_AUTO_LOGIN')):
             return
-
-        # allow manual login when you append ?manual=1
+        # allow manual login override
         if request.args.get("manual") == "1":
             return
-
-        # don’t auto-login for static files or non-GET/HEAD/OPTIONS
         if request.path.startswith('/static'):
             return
         if request.method not in ('GET', 'HEAD', 'OPTIONS'):
             return
-
         if current_user.is_authenticated:
             return
-
         # ensure demo admin exists (idempotent)
         u = User.query.filter_by(username="demo").first()
         if not u:
@@ -112,17 +106,13 @@ def create_app():
             db.session.add(u)
             db.session.commit()
         else:
-            # never downgrade; upgrade to admin if needed
             if (u.role or '').lower() != 'admin':
                 u.role = 'admin'
                 db.session.commit()
 
         login_user(u, remember=False)
-
-        # Optional UX: if they came to root/login, send them to the dashboard
         if request.path.rstrip('/') in {'', '/login', '/auth/login'}:
             return redirect('/dashboard')
-
 
     # For pretty UX, redirect to dashboard only if you came to root/login;
     # otherwise just continue to the originally requested page.
@@ -149,6 +139,8 @@ def create_app():
 
     @app.before_request
     def demo_readonly_guard():
+        if not has_request_context():
+            return
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_READONLY')):
             return
 
@@ -159,25 +151,31 @@ def create_app():
         ep = (request.endpoint or '')
         path = (request.path or '')
 
-        # allow auth endpoints and manual reset route if you have one
-        if ep in SAFE_WRITE_ENDPOINTS or path in SAFE_WRITE_PATHS or path.startswith('/_admin/reset_demo'):
+        # allow auth endpoints and the reset URL
+        if ep in {'auth.login','auth.logout','auth.register'} \
+        or path in {'/login','/logout','/register'} \
+        or path.startswith('/_admin/reset_demo'):
             return
 
-        # smart allow for API reads that use POST (common in this app)
-        if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
-            # If it's a JSON API under /api, inspect 'action' before blocking
+        # POST/PUT/PATCH/DELETE: apply smart write detection
+        if request.method in ('POST','PUT','PATCH','DELETE'):
             if path.startswith('/api/'):
                 data = request.get_json(silent=True) or {}
-                action = str(data.get('action', '')).lower().strip()
-                if action and any(a in action for a in WRITE_ACTIONS):
+                action = str(data.get('action','')).lower().strip()
+                if any(a in action for a in {
+                    "add","create","new","edit","update","delete","remove","save","import","upload",
+                    "mark","toggle","set","assign","purge","wipe","confirm","finalize"
+                }):
                     abort(403, description='Demo is read-only. Changes are disabled.')
-                # no write action -> allow
                 return
-
-            # Non-API: only block if URL looks like a write
-            if WRITE_PATH_RE.search(path):
+            # Non-API paths: block only if the URL *looks* like a write
+            import re
+            if re.search(
+                r"/(order|orders|warehouse|delivered|stockreport|stock|report)"
+                r".*(add|create|new|edit|update|delete|remove|save|import|upload|mark|toggle|set|assign|purge|wipe|confirm|finalize)",
+                path, re.IGNORECASE,
+            ):
                 abort(403, description='Demo is read-only. Changes are disabled.')
-            # else allow
             return
 
     # Expose demo flags to Jinja
