@@ -1,7 +1,7 @@
 import os
 import re
 from datetime import datetime
-from flask import Flask, request, abort, redirect, has_request_context
+from flask import Flask, request, abort, redirect, jsonify
 from flask_login import LoginManager, current_user, login_user
 from flask_migrate import Migrate
 
@@ -40,55 +40,90 @@ def create_app():
     app.config['DEMO_READONLY'] = os.getenv('DEMO_READONLY', 'true').lower() == 'true'
     app.config['DEMO_RESET_TOKEN'] = os.getenv('DEMO_RESET_TOKEN', 'change-me')
     app.config['DEMO_AUTO_LOGIN'] = os.getenv('DEMO_AUTO_LOGIN', 'true').lower() == 'true'
+    app.config['AUTO_SEED_ON_EMPTY'] = os.getenv('AUTO_SEED_ON_EMPTY', 'true').lower() == 'true'
+    app.config['USE_SEED_BOOT'] = os.getenv('USE_SEED_BOOT', 'true').lower() == 'true'  # prefer seed_boot by default
 
     # Init extensions
     init_db(app)
     login_manager.init_app(app)
     Migrate(app, db)
 
-    # --- Register routes normally (NO test_request_context) ---
-    from app.routes import register_routes
-    register_routes(app)
+    # Delay importing routes to avoid early context errors
+    with app.test_request_context('/'):
+        from app.routes import register_routes  # type: ignore
+        register_routes(app)
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # ---------- One-time auto-seed on first request ----------
-    app.config['_DEMO_SEEDED'] = False
+    # ---------------------- Robust seeding helpers ----------------------
+    def _run_seed() -> int:
+        """
+        Try seed_boot.ensure_seed() first (date/status aware). If not available,
+        try demo_seed.seed_orders(). If nothing is available, return 0 safely.
+        """
+        # prefer seed_boot if flag is true
+        prefer_boot = app.config.get('USE_SEED_BOOT', True)
 
-    @app.before_request
-    def demo_seed_on_first_request():
-        if not has_request_context():
-            return
+        def _try_seed_boot():
+            try:
+                from .seed_boot import ensure_seed  # relative import
+                n = ensure_seed() or 0
+                return int(n)
+            except Exception as e:
+                app.logger.warning(f"seed_boot ensure_seed skipped: {e}")
+                return None
+
+        def _try_demo_seed():
+            try:
+                from .demo_seed import seed_orders  # relative import
+                _, n = seed_orders()
+                return int(n or 0)
+            except Exception as e:
+                app.logger.warning(f"demo_seed skipped: {e}")
+                return None
+
+        order = (_try_seed_boot, _try_demo_seed) if prefer_boot else (_try_demo_seed, _try_seed_boot)
+        for fn in order:
+            n = fn()
+            if n is not None:
+                return n
+        return 0
+
+    def _seed_if_empty_once():
+        """Seed once per process if table is empty, guarded by flags."""
         if app.config.get('_DEMO_SEEDED'):
             return
-        if not (app.config.get("DEMO_MODE") and os.getenv("AUTO_SEED_ON_EMPTY", "true").lower() == "true"):
+        if not (app.config.get("DEMO_MODE") and app.config.get("AUTO_SEED_ON_EMPTY")):
             app.config['_DEMO_SEEDED'] = True
             return
         try:
             if Order.query.count() == 0:
-                # If you migrated to seed_boot.ensure_seed(), swap the import here.
-                from app.demo_seed import seed_orders
-                seed_orders()
+                _run_seed()
         except Exception as e:
             app.logger.warning(f"Auto-seed skipped: {e}")
         finally:
             app.config['_DEMO_SEEDED'] = True
 
-    # ---------------- Auto-login demo user ----------------
+    app.config['_DEMO_SEEDED'] = False
+
+    @app.before_request
+    def _auto_seed_hook():
+        _seed_if_empty_once()
+
+    # ---------------- Auto-login demo user (never downgrade role) ----------------
     AUTO_LOGIN_PATHS = {"/", "/login", "/auth/login"}
 
     @app.before_request
     def demo_auto_login():
-        if not has_request_context():
-            return
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_AUTO_LOGIN')):
             return
+        # allow manual login when you append ?manual=1
         if request.args.get("manual") == "1":
             return
         path = request.path.rstrip('/')
-        if path not in {p.rstrip('/') for p in AUTO_LOGIN_PATHS} and current_user.is_authenticated:
+        if path not in {p.rstrip('/') for p in AUTO_LOGIN_PATHS}:
             return
         if current_user.is_authenticated:
             return
@@ -96,7 +131,7 @@ def create_app():
         # ensure demo user exists
         u = User.query.filter_by(username="demo").first()
         if not u:
-            u = User(username="demo", role="admin")
+            u = User(username="demo", role="admin")  # create as admin
             try:
                 setattr(u, "email", "demo@portfolio.app")
             except Exception:
@@ -105,15 +140,19 @@ def create_app():
             db.session.add(u)
             db.session.commit()
         else:
-            if (u.role or '').lower() != 'admin':
+            # NEVER downgrade: upgrade to admin if needed
+            try:
+                current_role = (u.role or '').lower()
+            except Exception:
+                current_role = ''
+            if current_role != 'admin':
                 u.role = 'admin'
                 db.session.commit()
 
         login_user(u, remember=False)
-        if path in {"", "/login", "/auth/login"}:
-            return redirect("/dashboard")
+        return redirect("/dashboard")
 
-    # ---------------- Demo read-only guard ----------------
+    # ---------------- Demo read-only guard (smart allow for read POSTs) ----------------
     SAFE_WRITE_ENDPOINTS = {'auth.login', 'auth.logout', 'auth.register'}
     SAFE_WRITE_PATHS = {'/login', '/logout', '/register'}
 
@@ -130,30 +169,35 @@ def create_app():
 
     @app.before_request
     def demo_readonly_guard():
-        if not has_request_context():
-            return
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_READONLY')):
             return
 
+        # always allow static
         if request.path.startswith('/static'):
             return
 
         ep = (request.endpoint or '')
         path = (request.path or '')
 
+        # allow auth endpoints and manual reset route if you have one
         if ep in SAFE_WRITE_ENDPOINTS or path in SAFE_WRITE_PATHS or path.startswith('/_admin/reset_demo'):
             return
 
+        # smart allow for API reads that use POST (common in this app)
         if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            # If it's a JSON API under /api, inspect 'action' before blocking
             if path.startswith('/api/'):
                 data = request.get_json(silent=True) or {}
                 action = str(data.get('action', '')).lower().strip()
                 if action and any(a in action for a in WRITE_ACTIONS):
                     abort(403, description='Demo is read-only. Changes are disabled.')
+                # no write action -> allow
                 return
 
+            # Non-API: only block if URL looks like a write
             if WRITE_PATH_RE.search(path):
                 abort(403, description='Demo is read-only. Changes are disabled.')
+            # else allow
             return
 
     # Expose demo flags to Jinja
@@ -164,7 +208,7 @@ def create_app():
             'DEMO_AUTO_LOGIN': app.config.get('DEMO_AUTO_LOGIN', False),
         }
 
-    # ---------------- Template filters ----------------
+    # ---------------- Template filters (kept) ----------------
     @app.template_filter('format_date')
     def format_date(value):
         try:
@@ -191,62 +235,45 @@ def create_app():
     def jinja_lookup(obj, key):
         return obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
 
-    # ---------------- CLI ----------------
+    # ---------------- HTTP maintenance endpoints (no blueprint wiring) ----------------
+    @app.get("/_admin/seed_if_empty")
+    def http_seed_if_empty():
+        token = request.args.get("token", "")
+        if token != app.config.get("DEMO_RESET_TOKEN", "change-me"):
+            abort(403, description="Forbidden: bad token")
+        count = Order.query.count()
+        if count > 0:
+            return jsonify({"status": "skipped", "reason": "orders already present", "count": count})
+        n = _run_seed()
+        return jsonify({"status": "seeded", "count": n})
+
+    @app.get("/_admin/reset_demo")
+    def http_reset_demo():
+        token = request.args.get("token", "")
+        if token != app.config.get("DEMO_RESET_TOKEN", "change-me"):
+            abort(403, description="Forbidden: bad token")
+        deleted = Order.query.delete()
+        db.session.commit()
+        n = _run_seed()
+        return jsonify({"status": "reset_ok", "deleted": int(deleted), "seeded": n})
+
+    # ---------------- CLI: demo seed/reset/clear ----------------
     @app.cli.command('demo-seed')
     def demo_seed():
-        from app.demo_seed import seed_orders
-        username, n = seed_orders()
-        print(f"Seeded {n} demo orders. Login: {username} / demo1234")
+        n = _run_seed()
+        print(f"Seeded {n} demo orders. Login: demo / demo1234")
 
     @app.cli.command('demo-reset')
     def demo_reset():
-        from app.demo_seed import seed_orders
         Order.query.delete()
         db.session.commit()
-        username, n = seed_orders()
-        print(f"Demo reset complete. Seeded {n}. Login: {username} / demo1234")
+        n = _run_seed()
+        print(f"Demo reset complete. Seeded {n}. Login: demo / demo1234")
 
     @app.cli.command('demo-clear')
     def demo_clear():
         cleared = Order.query.delete()
         db.session.commit()
         print(f"✅ Demo cleared. Rows deleted: {cleared}")
-
-    # ---------------- Admin-less maintenance endpoints (token protected) -------------
-    from flask import jsonify
-
-    def _check_token():
-        token = request.args.get("token", "")
-        expected = app.config.get("DEMO_RESET_TOKEN", "change-me")
-        if token != expected:
-            abort(403, description="Forbidden: bad token")
-
-    def _run_seed():
-        """Choose which seeder to use based on USE_SEED_BOOT env flag."""
-        use_seed_boot = str(app.config.get("USE_SEED_BOOT", "false")).lower() == "true"
-        if use_seed_boot:
-            from app.seed_boot import ensure_seed
-            return int(ensure_seed() or 0)
-        else:
-            from app.demo_seed import seed_orders
-            _, n = seed_orders()
-            return int(n or 0)
-
-    @app.get("/_admin/seed_if_empty")
-    def _seed_if_empty():
-        _check_token()
-        cnt = Order.query.count()
-        if cnt > 0:
-            return jsonify({"status": "skipped", "reason": "orders already present", "count": cnt})
-        n = _run_seed()
-        return jsonify({"status": "seeded", "count": n})
-
-    @app.get("/_admin/reset_demo")
-    def _reset_demo():
-        _check_token()
-        deleted = Order.query.delete()
-        db.session.commit()
-        n = _run_seed()
-        return jsonify({"status": "reset_ok", "deleted": int(deleted), "seeded": n})
 
     return app
