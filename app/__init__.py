@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Flask, request, abort, redirect
 from flask_login import LoginManager, current_user, login_user
 from flask_migrate import Migrate
+from flask import has_request_context
 
 from .database import db, init_db
 from .models import User, Order
@@ -81,6 +82,8 @@ def create_app():
 
     @app.before_request
     def demo_auto_login():
+        if not has_request_context():
+            return
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_AUTO_LOGIN')):
             return
 
@@ -88,7 +91,7 @@ def create_app():
         if request.args.get("manual") == "1":
             return
 
-        # don’t auto-login for static files or non-GET API calls
+        # don’t auto-login for static files or non-GET/HEAD/OPTIONS
         if request.path.startswith('/static'):
             return
         if request.method not in ('GET', 'HEAD', 'OPTIONS'):
@@ -115,6 +118,11 @@ def create_app():
                 db.session.commit()
 
         login_user(u, remember=False)
+
+        # Optional UX: if they came to root/login, send them to the dashboard
+        if request.path.rstrip('/') in {'', '/login', '/auth/login'}:
+            return redirect('/dashboard')
+
 
     # For pretty UX, redirect to dashboard only if you came to root/login;
     # otherwise just continue to the originally requested page.

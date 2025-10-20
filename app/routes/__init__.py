@@ -1,9 +1,16 @@
 
-from flask import request
+# app/routes/__init__.py
+from flask import request, current_app, has_request_context
 from flask_login import current_user
 
 def inject_globals():
-    return dict(current_user=current_user, current_path=request.path)
+    """Things available in every Jinja template; safe outside request context."""
+    return dict(
+        current_user=current_user,
+        current_path=request.path if has_request_context() else "",
+        VERSION=current_app.config.get("VERSION"),
+    )
+
 
 def register_routes(app):
     from .auth_routes import auth_bp
