@@ -76,25 +76,31 @@ def create_app():
             app.config['_DEMO_SEEDED'] = True
 
     # ---------------- Auto-login demo user (never downgrade role) ----------------
-    AUTO_LOGIN_PATHS = {"/", "/login", "/auth/login"}
+    # ---------------- Auto-login demo user (path-agnostic) ----------------
+    AUTO_LOGIN_REDIRECT_PATHS = {"/", "/login", "/auth/login"}
 
     @app.before_request
     def demo_auto_login():
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_AUTO_LOGIN')):
             return
+
         # allow manual login when you append ?manual=1
         if request.args.get("manual") == "1":
             return
-        path = request.path.rstrip('/')
-        if path not in {p.rstrip('/') for p in AUTO_LOGIN_PATHS}:
+
+        # don’t auto-login for static files or non-GET API calls
+        if request.path.startswith('/static'):
             return
+        if request.method not in ('GET', 'HEAD', 'OPTIONS'):
+            return
+
         if current_user.is_authenticated:
             return
 
-        # ensure demo user exists
+        # ensure demo admin exists (idempotent)
         u = User.query.filter_by(username="demo").first()
         if not u:
-            u = User(username="demo", role="admin")  # create as admin
+            u = User(username="demo", role="admin")
             try:
                 setattr(u, "email", "demo@portfolio.app")
             except Exception:
@@ -103,17 +109,20 @@ def create_app():
             db.session.add(u)
             db.session.commit()
         else:
-            # NEVER downgrade: upgrade to admin if needed
-            try:
-                current_role = (u.role or '').lower()
-            except Exception:
-                current_role = ''
-            if current_role != 'admin':
+            # never downgrade; upgrade to admin if needed
+            if (u.role or '').lower() != 'admin':
                 u.role = 'admin'
                 db.session.commit()
 
         login_user(u, remember=False)
+
+    # For pretty UX, redirect to dashboard only if you came to root/login;
+    # otherwise just continue to the originally requested page.
+    normalized = request.path.rstrip('/') or '/'
+    if normalized in {p.rstrip('/') for p in AUTO_LOGIN_REDIRECT_PATHS}:
         return redirect("/dashboard")
+    # else: fall through and let the view handle the current path
+
 
     # ---------------- Demo read-only guard (smart allow for read POSTs) ----------------
     SAFE_WRITE_ENDPOINTS = {'auth.login', 'auth.logout', 'auth.register'}
