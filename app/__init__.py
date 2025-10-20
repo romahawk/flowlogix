@@ -46,6 +46,12 @@ def create_app():
     login_manager.init_app(app)
     Migrate(app, db)
 
+    # ===== REGISTER ROUTES (via bootstrap shim) =====
+    # NOTE: import and call happen *after* app is created and extensions are inited
+    from app.routes._bootstrap import register_routes
+    register_routes(app)
+
+
     # --- Auto-seed on cold start (no Start Command needed) ---
     if os.getenv("AUTO_SEED_ON_EMPTY", "true").lower() == "true":
         with app.app_context():
