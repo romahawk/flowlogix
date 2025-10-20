@@ -1,10 +1,10 @@
 import os
 import re
 from datetime import datetime
-from flask import Flask, request, abort, redirect
+from flask import Flask, request, abort, redirect, has_request_context
 from flask_login import LoginManager, current_user, login_user
 from flask_migrate import Migrate
-from flask import has_request_context, request, redirect, abort
+
 from .database import db, init_db
 from .models import User, Order
 
@@ -46,8 +46,8 @@ def create_app():
     login_manager.init_app(app)
     Migrate(app, db)
 
-    # --- Register routes via bootstrap (idempotent; avoids double registration) ---
-    from app.routes._bootstrap import register_routes
+    # --- Register routes normally (NO test_request_context) ---
+    from app.routes import register_routes
     register_routes(app)
 
     @login_manager.user_loader
@@ -59,25 +59,25 @@ def create_app():
 
     @app.before_request
     def demo_seed_on_first_request():
-        # Run once per process
+        if not has_request_context():
+            return
         if app.config.get('_DEMO_SEEDED'):
             return
         if not (app.config.get("DEMO_MODE") and os.getenv("AUTO_SEED_ON_EMPTY", "true").lower() == "true"):
             app.config['_DEMO_SEEDED'] = True
             return
         try:
-            # if empty, seed; mark as done either way so we don't re-check every request
             if Order.query.count() == 0:
-                from app.seed_boot import ensure_seed
-                ensure_seed()
+                # If you migrated to seed_boot.ensure_seed(), swap the import here.
+                from app.demo_seed import seed_orders
+                seed_orders()
         except Exception as e:
-            app.logger.warning(f"Auto-seed skipped on startup: {e}")
+            app.logger.warning(f"Auto-seed skipped: {e}")
         finally:
             app.config['_DEMO_SEEDED'] = True
 
-    # ---------------- Auto-login demo user (never downgrade role) ----------------
-    # ---------------- Auto-login demo user (path-agnostic) ----------------
-    AUTO_LOGIN_REDIRECT_PATHS = {"/", "/login", "/auth/login"}
+    # ---------------- Auto-login demo user ----------------
+    AUTO_LOGIN_PATHS = {"/", "/login", "/auth/login"}
 
     @app.before_request
     def demo_auto_login():
@@ -85,16 +85,15 @@ def create_app():
             return
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_AUTO_LOGIN')):
             return
-        # allow manual login override
         if request.args.get("manual") == "1":
             return
-        if request.path.startswith('/static'):
-            return
-        if request.method not in ('GET', 'HEAD', 'OPTIONS'):
+        path = request.path.rstrip('/')
+        if path not in {p.rstrip('/') for p in AUTO_LOGIN_PATHS} and current_user.is_authenticated:
             return
         if current_user.is_authenticated:
             return
-        # ensure demo admin exists (idempotent)
+
+        # ensure demo user exists
         u = User.query.filter_by(username="demo").first()
         if not u:
             u = User(username="demo", role="admin")
@@ -111,18 +110,10 @@ def create_app():
                 db.session.commit()
 
         login_user(u, remember=False)
-        if request.path.rstrip('/') in {'', '/login', '/auth/login'}:
-            return redirect('/dashboard')
+        if path in {"", "/login", "/auth/login"}:
+            return redirect("/dashboard")
 
-    # For pretty UX, redirect to dashboard only if you came to root/login;
-    # otherwise just continue to the originally requested page.
-    normalized = request.path.rstrip('/') or '/'
-    if normalized in {p.rstrip('/') for p in AUTO_LOGIN_REDIRECT_PATHS}:
-        return redirect("/dashboard")
-    # else: fall through and let the view handle the current path
-
-
-    # ---------------- Demo read-only guard (smart allow for read POSTs) ----------------
+    # ---------------- Demo read-only guard ----------------
     SAFE_WRITE_ENDPOINTS = {'auth.login', 'auth.logout', 'auth.register'}
     SAFE_WRITE_PATHS = {'/login', '/logout', '/register'}
 
@@ -144,37 +135,24 @@ def create_app():
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_READONLY')):
             return
 
-        # always allow static
         if request.path.startswith('/static'):
             return
 
         ep = (request.endpoint or '')
         path = (request.path or '')
 
-        # allow auth endpoints and the reset URL
-        if ep in {'auth.login','auth.logout','auth.register'} \
-        or path in {'/login','/logout','/register'} \
-        or path.startswith('/_admin/reset_demo'):
+        if ep in SAFE_WRITE_ENDPOINTS or path in SAFE_WRITE_PATHS or path.startswith('/_admin/reset_demo'):
             return
 
-        # POST/PUT/PATCH/DELETE: apply smart write detection
-        if request.method in ('POST','PUT','PATCH','DELETE'):
+        if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
             if path.startswith('/api/'):
                 data = request.get_json(silent=True) or {}
-                action = str(data.get('action','')).lower().strip()
-                if any(a in action for a in {
-                    "add","create","new","edit","update","delete","remove","save","import","upload",
-                    "mark","toggle","set","assign","purge","wipe","confirm","finalize"
-                }):
+                action = str(data.get('action', '')).lower().strip()
+                if action and any(a in action for a in WRITE_ACTIONS):
                     abort(403, description='Demo is read-only. Changes are disabled.')
                 return
-            # Non-API paths: block only if the URL *looks* like a write
-            import re
-            if re.search(
-                r"/(order|orders|warehouse|delivered|stockreport|stock|report)"
-                r".*(add|create|new|edit|update|delete|remove|save|import|upload|mark|toggle|set|assign|purge|wipe|confirm|finalize)",
-                path, re.IGNORECASE,
-            ):
+
+            if WRITE_PATH_RE.search(path):
                 abort(403, description='Demo is read-only. Changes are disabled.')
             return
 
@@ -213,22 +191,20 @@ def create_app():
     def jinja_lookup(obj, key):
         return obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
 
-    # ---------------- CLI: demo seed/reset/clear ----------------
+    # ---------------- CLI ----------------
     @app.cli.command('demo-seed')
     def demo_seed():
-        # ensure-only seed, does nothing if rows exist
-        from app.seed_boot import ensure_seed
-        ensure_seed()
-        print("Seeded demo data (idempotent). Login: demo / demo1234")
+        from app.demo_seed import seed_orders
+        username, n = seed_orders()
+        print(f"Seeded {n} demo orders. Login: {username} / demo1234")
 
     @app.cli.command('demo-reset')
     def demo_reset():
-        # clear and seed again
-        from app.seed_boot import ensure_seed
+        from app.demo_seed import seed_orders
         Order.query.delete()
         db.session.commit()
-        ensure_seed()
-        print("Demo reset complete. Login: demo / demo1234")
+        username, n = seed_orders()
+        print(f"Demo reset complete. Seeded {n}. Login: {username} / demo1234")
 
     @app.cli.command('demo-clear')
     def demo_clear():
