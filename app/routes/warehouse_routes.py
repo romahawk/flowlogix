@@ -1,17 +1,17 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
-from app import db
-from app.models import db, Order, WarehouseStock, DeliveredGoods, StockReportEntry
-from app.roles import can_edit, can_view_all
 from datetime import datetime, timedelta
-from flask import jsonify, make_response
-from app.utils.logging import log_activity
-from sqlalchemy import or_, func, extract
 import os
-from weasyprint import HTML
-from app.roles import can_view_all
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask_login import login_required, current_user
+from sqlalchemy import or_, func
+
+from app import db
+from app.models import Order, WarehouseStock, DeliveredGoods, StockReportEntry
+from app.roles import can_edit, can_view_all
+from app.utils.logging import log_activity
 
 warehouse_bp = Blueprint('warehouse', __name__)
+
 
 @warehouse_bp.route('/warehouse')
 @login_required
@@ -35,7 +35,7 @@ def warehouse():
             or_(
                 func.lower(WarehouseStock.order_number).like(like_term),
                 func.lower(WarehouseStock.product_name).like(like_term),
-                func.lower(WarehouseStock.notes).like(like_term)
+                func.lower(WarehouseStock.notes).like(like_term),
             )
         )
 
@@ -43,25 +43,21 @@ def warehouse():
     sort_column_map = {
         'order_number': WarehouseStock.order_number,
         'product_name': WarehouseStock.product_name,
-        'quantity': WarehouseStock.quantity,
-        'ata': WarehouseStock.ata,
-        'transport': WarehouseStock.transport
+        'quantity':     WarehouseStock.quantity,
+        'ata':          WarehouseStock.ata,
+        'transport':    WarehouseStock.transport,
     }
 
     if sort_key in sort_column_map:
         sort_column = sort_column_map[sort_key]
-        if sort_dir == 'asc':
-            query = query.order_by(sort_column.asc())
-        else:
-            query = query.order_by(sort_column.desc())
+        query = query.order_by(sort_column.asc() if sort_dir == 'asc' else sort_column.desc())
     else:
-        # Fallback if invalid sort_key
         query = query.order_by(WarehouseStock.ata.desc())
 
     pagination = query.paginate(page=page, per_page=per_page)
     warehouse_items = pagination.items
 
-    reported_ids = [entry.related_order_id for entry in StockReportEntry.query.all() if entry.related_order_id]
+    reported_ids = [e.related_order_id for e in StockReportEntry.query.all() if e.related_order_id]
 
     return render_template(
         'warehouse.html',
@@ -70,7 +66,7 @@ def warehouse():
         per_page=per_page,
         reported_ids=reported_ids,
         sort_key=sort_key,
-        sort_dir=sort_dir
+        sort_dir=sort_dir,
     )
 
 
@@ -101,7 +97,7 @@ def add_warehouse_manual():
             ata=ata,
             transport=transport,
             notes=notes,
-            is_manual=True
+            is_manual=True,
         )
         db.session.add(new_item)
         db.session.commit()
@@ -112,6 +108,7 @@ def add_warehouse_manual():
         flash(f"Error adding manual order: {e}", "danger")
 
     return redirect(url_for('warehouse.warehouse'))
+
 
 @warehouse_bp.route('/stock_order/<int:order_id>', methods=['POST'])
 @login_required
@@ -128,7 +125,7 @@ def stock_order(order_id):
         quantity=order.quantity,
         ata=order.ata,
         transport=order.transport,
-        notes="Stocked from order"
+        notes="Stocked from order",
     )
     db.session.add(new_stock)
     db.session.delete(order)
@@ -136,6 +133,7 @@ def stock_order(order_id):
     log_activity("Move to Warehouse", f"#{order.order_number} – stocked from Dashboard")
     flash("Order moved to warehouse.", "success")
     return redirect(url_for('dashboard.dashboard'))
+
 
 @warehouse_bp.route('/deliver_partial/<int:item_id>', methods=['POST'])
 @login_required
@@ -163,8 +161,6 @@ def deliver_partial(item_id):
     else:
         item.quantity = new_qty
 
-
-    # Not mandatory, but good future-proofing
     delivery = DeliveredGoods(
         user_id=item.user_id,
         order_number=item.order_number,
@@ -177,7 +173,7 @@ def deliver_partial(item_id):
         client=item.client,
         pos_no=item.pos_no,
         customer_ref=item.customer_ref,
-        delivery_date=datetime.now().strftime('%d.%m.%y')
+        delivery_date=datetime.now().strftime('%d.%m.%y'),
     )
 
     db.session.add(delivery)
@@ -207,6 +203,7 @@ def edit_warehouse(item_id):
 
     return render_template('edit_warehouse.html', item=item)
 
+
 @warehouse_bp.route('/delete_warehouse/<int:item_id>', methods=['POST'])
 @login_required
 def delete_warehouse(item_id):
@@ -220,6 +217,7 @@ def delete_warehouse(item_id):
     log_activity("Delete Warehouse Item", f"#{item.order_number}")
     flash('Warehouse item deleted successfully.', 'success')
     return redirect(url_for('warehouse.warehouse'))
+
 
 @warehouse_bp.route('/stockreport/<int:item_id>', methods=['GET', 'POST'])
 @login_required
@@ -267,7 +265,7 @@ def stockreport_entry_form(item_id):
                 client=form.get('client', ''),
                 pos_no=form.get('pos_no', ''),
                 customer_ref=form.get('customer_ref', ''),
-                related_order_id=item.id
+                related_order_id=item.id,
             )
 
             db.session.add(entry)
@@ -281,6 +279,7 @@ def stockreport_entry_form(item_id):
             flash(f"Error saving stockreport entry: {e}", "danger")
 
     return render_template('stockreport_form.html', item=item, product_options=product_options)
+
 
 @warehouse_bp.route('/stockreport/view/<int:item_id>')
 @login_required
@@ -319,24 +318,36 @@ def view_stockreport_entries(item_id):
         signature_date_client=signature_date_client,
         signature_client=signature_client,
         signature_date_warehouse=signature_date_warehouse,
-        signature_warehouse=signature_warehouse
+        signature_warehouse=signature_warehouse,
     )
 
 
 @warehouse_bp.route('/stockreport/download/<int:item_id>')
 @login_required
 def download_stockreport(item_id):
+    """Generate a PDF for a stock report. Falls back gracefully if WeasyPrint/system libs aren't available."""
     item = WarehouseStock.query.get_or_404(item_id)
     if not can_view_all(current_user.role) and current_user.id != item.user_id:
         flash("Access denied.", "danger")
         return redirect(url_for('warehouse.warehouse'))
+
     entries = StockReportEntry.query.filter_by(related_order_id=item_id).all()
     html_content = render_template('view_stockreport.html', item=item, entries=entries)
-    pdf_content = HTML(string=html_content, base_url=request.url_root).write_pdf()
+
+    # Lazy import to avoid startup failures on Render Free/Starter
+    try:
+        from weasyprint import HTML  # noqa: WPS433
+        pdf_content = HTML(string=html_content, base_url=request.url_root).write_pdf()
+    except Exception as e:
+        # Graceful fallback: inform the user and send them to the on-screen view
+        flash(f"PDF export is unavailable on this instance: {e}", "warning")
+        return redirect(url_for('warehouse.view_stockreport_entries', item_id=item_id))
+
     response = make_response(pdf_content)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'attachment; filename=StockReport.pdf'
     return response
+
 
 @warehouse_bp.route('/stockreport/edit/<int:entry_id>', methods=['POST'])
 @login_required
@@ -354,7 +365,7 @@ def edit_stockreport(entry_id):
         # Update other fields
         entry_fields = [
             'article_batch', 'colli', 'packing', 'pcs', 'colli_per_pal', 'pcs_total',
-            'pal', 'product', 'gross_kg', 'net_kg', 'sender', 'customs_status', 'stockref'
+            'pal', 'product', 'gross_kg', 'net_kg', 'sender', 'customs_status', 'stockref',
         ]
         for field in entry_fields:
             if field in request.form:
@@ -365,7 +376,7 @@ def edit_stockreport(entry_id):
             'warehouse_address', 'pos_no', 'client', 'customer_ref',
             'atb_first', 'customs_ozl', 'free_till',
             'signature_date_client', 'signature_client',
-            'signature_date_warehouse', 'signature_warehouse'
+            'signature_date_warehouse', 'signature_warehouse',
         ]
         for field in order_fields:
             if field in request.form:
@@ -373,13 +384,11 @@ def edit_stockreport(entry_id):
 
         db.session.commit()
         log_activity("Edit Stockreport Entry", f"Entry #{entry_id} for #{order.order_number}")
-
         return '', 204
 
     except Exception as e:
         print("❌ Error saving stockreport edit:", e)
         return "Internal server error", 500
-
 
 
 @warehouse_bp.route('/stockreport/delete/<int:entry_id>', methods=['POST'])
@@ -404,7 +413,8 @@ def delete_stockreport(entry_id):
             return jsonify({"success": False, "error": str(e)}), 400
         flash(f"Delete failed: {e}", "danger")
         return redirect(url_for('warehouse.warehouse'))
-    
+
+
 @warehouse_bp.route('/stockreport/view_by_order/<string:order_number>')
 @login_required
 def view_stockreport_by_order(order_number):
@@ -441,9 +451,9 @@ def view_stockreport_by_order(order_number):
         atb_frist=atb_frist,
         customs_ozl=customs_ozl,
         free_till=free_till,
-        signature_date_client=getattr(first_entry, 'signature_date_client', None),
-        signature_client=getattr(first_entry, 'signature_client', None),
-        signature_date_warehouse=getattr(first_entry, 'signature_date_warehouse', None),
-        signature_warehouse=getattr(first_entry, 'signature_warehouse', None),
-        report_header=getattr(first_entry, '__dict__', {})  # 🚨 Pass extra fields
+        signature_date_client=getattr(first_entry, 'signature_date_client', None) if first_entry else None,
+        signature_client=getattr(first_entry, 'signature_client', None) if first_entry else None,
+        signature_date_warehouse=getattr(first_entry, 'signature_date_warehouse', None) if first_entry else None,
+        signature_warehouse=getattr(first_entry, 'signature_warehouse', None) if first_entry else None,
+        report_header=getattr(first_entry, '__dict__', {}) if first_entry else {},
     )
