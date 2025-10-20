@@ -46,53 +46,32 @@ def create_app():
     login_manager.init_app(app)
     Migrate(app, db)
 
-    # ===== REGISTER ROUTES (via bootstrap shim) =====
-    # NOTE: import and call happen *after* app is created and extensions are inited
+    # --- Register routes via bootstrap (idempotent; avoids double registration) ---
     from app.routes._bootstrap import register_routes
     register_routes(app)
-
-
-    # --- Auto-seed on cold start (no Start Command needed) ---
-    if os.getenv("AUTO_SEED_ON_EMPTY", "true").lower() == "true":
-        with app.app_context():
-            try:
-                if Order.query.count() == 0:
-                    from app.seed_boot import ensure_seed
-                    ensure_seed()  # idempotent
-                    app.logger.info("Auto-seed: completed on startup.")
-            except Exception as e:
-                app.logger.warning(f"Auto-seed skipped on startup: {e}")
-
-
-    # IMPORTANT: delay importing routes until a (test) request context exists
-    with app.test_request_context('/'):
-        from app.routes import register_routes   # delayed import prevents context error
-        register_routes(app)
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # ---------- One-time auto-seed on first request (version-proof) ----------
+    # ---------- One-time auto-seed on first request ----------
     app.config['_DEMO_SEEDED'] = False
 
     @app.before_request
     def demo_seed_on_first_request():
-        """
-        If DEMO_MODE and AUTO_SEED_ON_EMPTY=true, seed once when the first request arrives
-        and the Orders table is empty. Uses app.seed_boot.ensure_seed() which is idempotent.
-        """
+        # Run once per process
         if app.config.get('_DEMO_SEEDED'):
             return
         if not (app.config.get("DEMO_MODE") and os.getenv("AUTO_SEED_ON_EMPTY", "true").lower() == "true"):
             app.config['_DEMO_SEEDED'] = True
             return
         try:
+            # if empty, seed; mark as done either way so we don't re-check every request
             if Order.query.count() == 0:
                 from app.seed_boot import ensure_seed
                 ensure_seed()
         except Exception as e:
-            app.logger.warning(f"Auto-seed skipped: {e}")
+            app.logger.warning(f"Auto-seed skipped on startup: {e}")
         finally:
             app.config['_DEMO_SEEDED'] = True
 
@@ -192,7 +171,7 @@ def create_app():
             'DEMO_AUTO_LOGIN': app.config.get('DEMO_AUTO_LOGIN', False),
         }
 
-    # ---------------- Template filters (kept from your original) ----------------
+    # ---------------- Template filters ----------------
     @app.template_filter('format_date')
     def format_date(value):
         try:
@@ -222,27 +201,19 @@ def create_app():
     # ---------------- CLI: demo seed/reset/clear ----------------
     @app.cli.command('demo-seed')
     def demo_seed():
-        """Seed demo data if empty (idempotent)."""
-        try:
-            from app.seed_boot import ensure_seed
-            before = Order.query.count()
-            ensure_seed()
-            after = Order.query.count()
-            print(f"Seed complete. Orders: {before} -> {after}")
-        except Exception as e:
-            print(f"Seed failed: {e}")
+        # ensure-only seed, does nothing if rows exist
+        from app.seed_boot import ensure_seed
+        ensure_seed()
+        print("Seeded demo data (idempotent). Login: demo / demo1234")
 
     @app.cli.command('demo-reset')
     def demo_reset():
-        """Clear all orders and re-seed demo data."""
-        try:
-            cleared = Order.query.delete()
-            db.session.commit()
-            from app.seed_boot import ensure_seed
-            ensure_seed()
-            print(f"Demo reset complete. Deleted {cleared} rows and re-seeded.")
-        except Exception as e:
-            print(f"Reset failed: {e}")
+        # clear and seed again
+        from app.seed_boot import ensure_seed
+        Order.query.delete()
+        db.session.commit()
+        ensure_seed()
+        print("Demo reset complete. Login: demo / demo1234")
 
     @app.cli.command('demo-clear')
     def demo_clear():
