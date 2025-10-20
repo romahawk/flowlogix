@@ -212,4 +212,41 @@ def create_app():
         db.session.commit()
         print(f"✅ Demo cleared. Rows deleted: {cleared}")
 
+    # ---------------- Admin-less maintenance endpoints (token protected) -------------
+    from flask import jsonify
+
+    def _check_token():
+        token = request.args.get("token", "")
+        expected = app.config.get("DEMO_RESET_TOKEN", "change-me")
+        if token != expected:
+            abort(403, description="Forbidden: bad token")
+
+    def _run_seed():
+        """Choose which seeder to use based on USE_SEED_BOOT env flag."""
+        use_seed_boot = str(app.config.get("USE_SEED_BOOT", "false")).lower() == "true"
+        if use_seed_boot:
+            from app.seed_boot import ensure_seed
+            return int(ensure_seed() or 0)
+        else:
+            from app.demo_seed import seed_orders
+            _, n = seed_orders()
+            return int(n or 0)
+
+    @app.get("/_admin/seed_if_empty")
+    def _seed_if_empty():
+        _check_token()
+        cnt = Order.query.count()
+        if cnt > 0:
+            return jsonify({"status": "skipped", "reason": "orders already present", "count": cnt})
+        n = _run_seed()
+        return jsonify({"status": "seeded", "count": n})
+
+    @app.get("/_admin/reset_demo")
+    def _reset_demo():
+        _check_token()
+        deleted = Order.query.delete()
+        db.session.commit()
+        n = _run_seed()
+        return jsonify({"status": "reset_ok", "deleted": int(deleted), "seeded": n})
+
     return app
