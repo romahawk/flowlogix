@@ -47,4 +47,8 @@ This delivered the **first working vertical slice**.
 
 **What to improve**
 - Split features into even smaller tasks  
+<<<<<<< HEAD
 - Add more realistic demo data for testing timeline logic
+=======
+- Add more realistic demo data for testing timeline logic
+>>>>>>> 984c2f7d744f643c8ad9ecca702b4c040353cc5d

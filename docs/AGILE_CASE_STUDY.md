@@ -197,4 +197,8 @@ Throughout development several positive practices emerged:
 
 - Early prototypes helped validate requirements.  
 - Keeping each Sprint small prevented overwhelm.  
+<<<<<<< HEAD
 - Writing Sprint notes improved clarity and decision-mak
+=======
+- Writing Sprint notes improved clarity and decision-mak
+>>>>>>> 984c2f7d744f643c8ad9ecca702b4c040353cc5d

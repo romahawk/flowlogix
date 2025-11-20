@@ -84,3 +84,7 @@ Core value:
 ## ✔ Status: Actively Developed
 
 This roadmap evolves based on real usage from pharmaceutical logistics company and new project opportunities.
+<<<<<<< HEAD
+=======
+
+>>>>>>> 984c2f7d744f643c8ad9ecca702b4c040353cc5d

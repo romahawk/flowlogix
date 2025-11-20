@@ -254,3 +254,7 @@ logistics operations and expandable into a SaaS platform. The architecture is
 simple, maintainable, and intentionally built to evolve from:
 
 **Internal dashboard → modern web app → micro-SaaS solution.**
+<<<<<<< HEAD
+=======
+
+>>>>>>> 984c2f7d744f643c8ad9ecca702b4c040353cc5d
