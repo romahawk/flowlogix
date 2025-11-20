@@ -72,7 +72,7 @@ See `docs/ARCHITECTURE.md` for a more detailed description.
 ```bash
 git clone https://github.com/romahawk/flowlogix.git
 cd flowlogix
-
+```
 ### 2. Create & activate virtual environment
 
 ```bash
@@ -81,25 +81,30 @@ python -m venv .venv
 .venv\Scripts\activate
 # macOS / Linux:
 source .venv/bin/activate
+```
 
 ### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
+```
 
 ### 4. Configure environment
 
 ```bash
 cp .env.example .env  # on Windows: copy .env.example .env
+```
 
-5. Initialize database (if required)
+### 5. Initialize database (if required)
 
 ```bash
 flask db upgrade      # if using Flask-Migrate
 # or run your seed script
 python utils/import_orders.py
+```
 
-6. Run the app
+### 6. Run the app
 
 ```bash
 python run.py
+```
