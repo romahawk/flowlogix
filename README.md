@@ -107,8 +107,5 @@ python utils/import_orders.py
 
 ```bash
 python run.py
-<<<<<<< HEAD
-```
-=======
-```
->>>>>>> 984c2f7d744f643c8ad9ecca702b4c040353cc5d
+
+
