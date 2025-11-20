@@ -1,4 +1,10 @@
-.env
+# Python cache
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Virtual env
+.venv/
+
+# Flask instance & env
 instance/
+.env
