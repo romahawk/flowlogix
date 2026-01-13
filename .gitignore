@@ -8,3 +8,10 @@ __pycache__/
 # Flask instance & env
 instance/
 .env
+
+# uploads & backups (legacy PoC)
+app/static/uploads/
+utils/backups/
+
+# local databases
+*.db
