@@ -1,7 +1,8 @@
 import os
 import re
+import uuid
 from datetime import datetime
-from flask import Flask, request, abort, redirect, jsonify
+from flask import Flask, request, abort, redirect, jsonify, url_for, session
 from flask_login import LoginManager, current_user, login_user
 from flask_migrate import Migrate
 
@@ -48,10 +49,34 @@ def create_app():
     login_manager.init_app(app)
     Migrate(app, db)
 
+    # ✅ API-friendly auth behavior:
+    # - For /api/* return JSON 401 (no HTML redirect)
+    # - For legacy UI keep redirect to login
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        if request.path.startswith("/api/"):
+            return jsonify({
+                "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Login required"
+                },
+                "trace_id": str(uuid.uuid4())
+            }), 401
+        return redirect(url_for("auth.login"))
+
     # Delay importing routes to avoid early context errors
     with app.test_request_context('/'):
         from app.routes import register_routes  # type: ignore
         register_routes(app)
+
+    # ---------------- API v1 (JSON) ----------------
+    # Registered after legacy routes to avoid circular-import surprises.
+    # Safe to keep in place while API module is being added incrementally.
+    try:
+        from app.api.v1 import api_v1_bp  # type: ignore
+        app.register_blueprint(api_v1_bp, url_prefix="/api/v1")
+    except Exception as e:
+        app.logger.warning(f"API v1 blueprint not registered yet: {e}")
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -119,9 +144,15 @@ def create_app():
     def demo_auto_login():
         if not (app.config.get('DEMO_MODE') and app.config.get('DEMO_AUTO_LOGIN')):
             return
+
+        # ✅ If user explicitly logged out, do NOT auto-login again until manual login.
+        if session.get("demo_disable_auto_login"):
+            return
+
         # allow manual login when you append ?manual=1
         if request.args.get("manual") == "1":
             return
+
         path = request.path.rstrip('/')
         if path not in {p.rstrip('/') for p in AUTO_LOGIN_PATHS}:
             return
@@ -163,8 +194,8 @@ def create_app():
     )
 
     WRITE_ACTIONS = {
-        "add","create","new","edit","update","delete","remove","save","import","upload",
-        "mark","toggle","set","assign","purge","wipe","confirm","finalize"
+        "add", "create", "new", "edit", "update", "delete", "remove", "save", "import", "upload",
+        "mark", "toggle", "set", "assign", "purge", "wipe", "confirm", "finalize"
     }
 
     @app.before_request

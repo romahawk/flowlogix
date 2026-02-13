@@ -1,4 +1,4 @@
-# Python cache
+﻿# Python cache
 __pycache__/
 *.py[cod]
 
@@ -8,3 +8,21 @@ __pycache__/
 # Flask instance & env
 instance/
 .env
+
+# uploads & backups (legacy PoC)
+app/static/uploads/
+utils/backups/
+
+# local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# local browser/session artifacts
+cookies.txt
+
+# temp and backup files
+*.log
+*.tmp
+*.bak
+*~

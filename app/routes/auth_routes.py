@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User, db
@@ -27,6 +27,10 @@ def login():
             user = User.query.filter_by(username=username).first()
             if user and user.check_password(password):
                 login_user(user, remember=remember)
+
+                # ✅ user logged in intentionally → allow demo auto-login again
+                session.pop("demo_disable_auto_login", None)
+
                 flash('Logged in successfully!', 'success')
                 return redirect(url_for('dashboard.dashboard'))
             else:
@@ -55,5 +59,9 @@ def login():
 @login_required
 def logout():
     logout_user()
+
+    # ✅ user explicitly logged out → don't auto-login demo user again
+    session["demo_disable_auto_login"] = True
+
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))
