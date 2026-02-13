@@ -1,0 +1,248 @@
+﻿:root {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --ink: #1b2430;
+  --muted: #5c6978;
+  --line: #d8dfe8;
+  --accent: #0f766e;
+  --accent-soft: #d7f3ef;
+  --danger: #991b1b;
+  --danger-soft: #fee2e2;
+  --font-main: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+  --font-title: "Space Grotesk", "Trebuchet MS", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-main);
+  color: var(--ink);
+  background: radial-gradient(circle at top right, #e8fff8 0%, var(--bg) 46%);
+}
+
+.app-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.shell-header {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr auto;
+  gap: 16px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+h1 {
+  margin: 4px 0 0;
+  font-family: var(--font-title);
+  font-size: 1.35rem;
+}
+
+.shell-nav {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.shell-nav a {
+  text-decoration: none;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.shell-nav a.active {
+  color: var(--ink);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.user-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.user-chip strong {
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.orders-toolbar,
+.orders-table-wrap,
+.pagination,
+.error-banner,
+.empty-state,
+.skeleton,
+.unauthorized {
+  margin-top: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.toolbar-row {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 240px));
+  gap: 10px;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.orders-table th,
+.orders-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.orders-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-banner {
+  border-color: #fca5a5;
+  background: var(--danger-soft);
+}
+
+.error-title {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.error-details {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.skeleton-bar,
+.skeleton-row {
+  height: 12px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #e8edf4 25%, #f4f7fb 50%, #e8edf4 75%);
+  background-size: 220% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-bar {
+  width: 45%;
+  margin-bottom: 12px;
+}
+
+.skeleton-row {
+  margin-bottom: 8px;
+}
+
+@keyframes shimmer {
+  from { background-position: 220% 0; }
+  to { background-position: -220% 0; }
+}
+
+.unauthorized a {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .shell-header {
+    grid-template-columns: 1fr;
+  }
+
+  .user-chip {
+    align-items: flex-start;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .toolbar-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 12px;
+  }
+
+  .field-grid,
+  .toolbar-row {
+    grid-template-columns: 1fr;
+  }
+}
