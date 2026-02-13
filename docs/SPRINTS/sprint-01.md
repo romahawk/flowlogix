@@ -1,54 +1,27 @@
-# Sprint 1 – Core Dashboard (Vertical Slice)
-**Duration:** 1 week  
-**Sprint Goal:** Deliver the smallest usable version of the supply tracking dashboard, including database setup, order model, and basic UI visualization.
+﻿# Sprint 1 - API v1 Orders (Complete)
 
----
+## Goal
+Establish a production-grade API-first backend foundation for FlowLogix that React can consume without coupling to server-rendered templates.
 
-## 🎯 Objectives
-- Establish Flask project structure and configuration
-- Implement User and Order models
-- Set up the initial SQLite database and migrations
-- Build a basic dashboard with a table of orders
-- Add the first version of the Chart.js timeline (ETD → ETA)
+## Delivered
+- `GET /api/v1/orders` with RBAC-safe scope control.
+- Server-side pagination: `page`, `per_page`.
+- Server-side filtering: `filter[transit_status]`, `filter[year]`, `filter[q]`, `filter[buyer]`, `filter[responsible]`, `filter[transport]`.
+- Stable, deterministic multi-field sorting with tie-breaker `id:desc`.
+- Strict query validation with structured `400` validation responses.
+- JSON auth behavior for API routes (no HTML redirect payloads).
+- `GET /api/v1/auth/me` for frontend bootstrap.
 
----
+## Quality Guarantees
+- Deterministic ordering for identical query inputs.
+- Strict validation at API boundary (fail fast, no silent coercion).
+- Role-safe server-side data scope.
 
-## ✅ Completed Work
-- Flask project scaffolded with app factory pattern
-- SQLAlchemy configured with `Order` and `User` models
-- Basic seed data for initial testing (`seed_boot.py`)
-- Table view implemented in `dashboard.html`
-- First Chart.js horizontal timeline using ETD and ETA
-- Basic filtering and sorting logic
+## Deferred Intentionally
+- Timeline UI.
+- Write endpoints and bulk operations.
+- Cursor pagination and search indexing.
 
----
-
-## ❗ Not Completed / Moved to Next Sprint
-- Role-based access control
-- Warehouse and Delivered lifecycle pages
-- Refined UI and UX improvements
-
----
-
-## 🔎 Demo Summary
-Users can now:
-- Authenticate via login page  
-- View all orders in a sortable table  
-- See timeline visualization for shipping progress  
-
-This delivered the **first working vertical slice**.
-
----
-
-## 🔄 Retrospective
-**What went well**
-- Early vertical slice helped validate data model and visualization approach  
-- Quick feedback allowed adjustment before expanding complexity  
-
-**What to improve**
-- Split features into even smaller tasks  
-<<<<<<< HEAD
-- Add more realistic demo data for testing timeline logic
-=======
-- Add more realistic demo data for testing timeline logic
->>>>>>> 984c2f7d744f643c8ad9ecca702b4c040353cc5d
+## Exit Criteria Met
+- API v1 read endpoints stable and portfolio-demo ready.
+- React foundation work can start with low backend rework risk.

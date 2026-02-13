@@ -1,4 +1,4 @@
-# Python cache
+﻿# Python cache
 __pycache__/
 *.py[cod]
 
@@ -15,3 +15,14 @@ utils/backups/
 
 # local databases
 *.db
+*.sqlite
+*.sqlite3
+
+# local browser/session artifacts
+cookies.txt
+
+# temp and backup files
+*.log
+*.tmp
+*.bak
+*~
