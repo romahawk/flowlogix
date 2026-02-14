@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta property="og:title" content="FlowLogix – Pharma Supply Chain Dashboard" />
+    <meta property="og:title" content="FlowLogix вЂ“ Pharma Supply Chain Dashboard" />
     <meta property="og:description" content="Full-stack Flask web app for tracking deliveries, stock, and warehouse operations." />
     <meta property="og:image" content="https://yourdomain.com/preview-image.jpg" />
     <meta property="og:url" content="https://flowlogix.onrender.com/" />
@@ -233,60 +233,64 @@
     <!-- Dashboard Content -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 shadow rounded p-4 text-center">
-            <div class="text-sm text-gray-500 dark:text-gray-400">🚚 Transit / Incoming Orders</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2"><i data-lucide="truck" class="w-4 h-4"></i><span>Transit / Incoming Orders</span></div>
             <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ in_transit_count }}</div>
         </div>
         <div class="bg-white dark:bg-gray-800 shadow rounded p-4 text-center">
-            <div class="text-sm text-gray-500 dark:text-gray-400">📦 Stocked Items / In Stock</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2"><i data-lucide="package" class="w-4 h-4"></i><span>Stocked Items / In Stock</span></div>
             <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ warehouse_count }}</div>
         </div>
         <div class="bg-white dark:bg-gray-800 shadow rounded p-4 text-center">
-            <div class="text-sm text-gray-500 dark:text-gray-400">✅ Completed Deliveries</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2"><i data-lucide="check-square" class="w-4 h-4"></i><span>Completed Deliveries</span></div>
             <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ delivered_count }}</div>
         </div>
     </div>
 
-    <div class="p-2 sm:p-2 space-y-6">
-        <!-- Your Orders Section (Collapsible) -->
-        <div class="p-2 sm:p-2 space-y-2">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg sm:text-xl font-semibold tracking-wide border-b border-gray-700 pb-1 mb-3 mt-6 text-gray-900 dark:text-gray-100 flex items-center gap-2">
+    <div class="p-2 sm:p-2 space-y-3">
+        <!-- Dashboard Tabs -->
+        <div class="p-1 sm:p-1 space-y-1">
+            <div class="flex items-center gap-2 border-b border-gray-700 pb-1 mb-2 mt-2">
+                <button id="tab-orders" type="button"
+                        class="text-lg sm:text-xl font-semibold tracking-wide text-gray-900 dark:text-gray-100 flex items-center gap-2 px-2 py-1 rounded-md bg-gray-200 dark:bg-gray-700">
                     <i data-lucide="boxes"></i>
                     Your Orders
-                </h2>
-                <button id="toggle-orders-btn" class="text-sm font-medium px-3 py-1 rounded-md transition 
-                        text-gray-700 dark:text-gray-300 hover:text-white hover:bg-gray-600 
-                        dark:hover:text-white dark:hover:bg-gray-500 focus:outline-none shadow-sm">
-                    Hide Orders
+                </button>
+                <button id="tab-timeline" type="button"
+                        class="text-lg sm:text-xl font-semibold tracking-wide text-gray-700 dark:text-gray-300 flex items-center gap-2 px-2 py-1 rounded-md">
+                    <i data-lucide="activity"></i>
+                    Timeline
                 </button>
             </div>
+        </div>
 
+        <!-- Your Orders Pane -->
+        <div id="dashboard-orders-pane" class="p-1 sm:p-1 space-y-2">
             <div id="your-orders-section" class="orders-section">
                 <!-- Search bar -->
-                <div class="mb-4">
+                <div class="mb-2">
                     <input type="text" id="search-dashboard" placeholder="Search orders (product, order #, status)"
                            class="w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
                 </div>
 
-                <div class="orders-table-container overflow-x-auto">
-                    <table class="min-w-[800px] bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+                <div id="orders-table-container" class="orders-table-container overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-md">
+                    <table class="min-w-[800px] w-full bg-gray-100 dark:bg-gray-900">
                         <thead class="bg-gray-200 dark:bg-gray-800">
                             <tr class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs sm:text-sm">
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="order_date">Order Date <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="order_number">Order # <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="product_name">Product Name <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="buyer">Buyer <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="responsible">Responsible <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="quantity">Quantity <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="required_delivery">Required Delivery <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="terms_of_delivery">Terms of Delivery <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="payment_date">Payment Date <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="etd">ETD <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="eta">ETA <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="ata">ATA <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="transit_status">Transit Status <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center" data-sort="transport">Transport <span class="sort-indicator"></span></th>
-                                <th class="px-2 py-1 sm:px-4 sm:py-3 text-center">Actions</th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="order_date">Order Date <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="order_number">Order # <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="product_name">Product Name <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="buyer">Buyer <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="responsible">Responsible <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="quantity">Quantity <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="required_delivery">Required Delivery <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="terms_of_delivery">Terms of Delivery <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="payment_date">Payment Date <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="etd">ETD <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="eta">ETA <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="ata">ATA <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="transit_status">Transit Status <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="transport">Transport <span class="sort-indicator"></span></th>
+                                <th class="px-2 py-1 text-center whitespace-nowrap">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-300 dark:divide-gray-600 bg-gray-100 dark:bg-gray-900">
@@ -294,15 +298,31 @@
                         </tbody>
                     </table>
                 </div>
+
+                <div id="dashboard-pagination" class="mt-2 flex items-center justify-center gap-2 hidden">
+                    <button id="orders-first-page" type="button"
+                            class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                        First
+                    </button>
+                    <button id="orders-prev-page" type="button"
+                            class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                        Prev
+                    </button>
+                    <span id="orders-page-label" class="text-sm text-gray-700 dark:text-gray-300 min-w-[170px] text-center"></span>
+                    <button id="orders-next-page" type="button"
+                            class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                        Next
+                    </button>
+                    <button id="orders-last-page" type="button"
+                            class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                        Last
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Timeline -->
-        <h2 class="text-lg sm:text-xl font-semibold tracking-wide border-b border-gray-700 pb-1 mb-3 mt-6 text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <i data-lucide="activity"></i>
-            Timeline
-        </h2>
-
+        <!-- Timeline Pane -->
+        <div id="dashboard-timeline-pane" class="hidden">
         <!-- Year Filter Dropdown -->
         <div class="mb-4">
             <label for="year-filter" class="text-sm font-medium text-gray-900 dark:text-gray-500 mr-2">Select Year:</label>
@@ -311,7 +331,7 @@
             </select>
         </div>
         <div id="year-warning" class="hidden text-yellow-700 bg-yellow-100 border border-yellow-400 px-4 py-2 rounded text-sm mt-4">
-            ⚠️ Some orders may exist for other years. Adjust the year filter to see them.
+            вљ пёЏ Some orders may exist for other years. Adjust the year filter to see them.
         </div>
 
         <!-- Legend for Timeline Chart -->
@@ -334,38 +354,51 @@
             <button id="back-btn" class="load-more-btn bg-blue-500 hover:bg-blue-700 text-gray-600 dark:text-gray-300 font-bold py-2 px-4 rounded hidden" onclick="loadPreviousOrders()">Back</button>
             <button id="load-more-btn" class="load-more-btn bg-blue-500 hover:bg-blue-700 text-gray-600 dark:text-gray-300 font-bold py-2 px-4 rounded hidden" onclick="loadMoreOrders()">Load More</button>
         </div>
+        </div>
     </div>
 
     <script> window.currentUserRole = "{{ current_user.role }}"; </script>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const toggleOrdersBtn = document.getElementById("toggle-orders-btn");
-            const yourOrdersSection = document.getElementById("your-orders-section");
+            const tabOrders = document.getElementById("tab-orders");
+            const tabTimeline = document.getElementById("tab-timeline");
+            const ordersPane = document.getElementById("dashboard-orders-pane");
+            const timelinePane = document.getElementById("dashboard-timeline-pane");
+            if (!tabOrders || !tabTimeline || !ordersPane || !timelinePane) return;
 
-            toggleOrdersBtn.addEventListener("click", () => {
-                if (yourOrdersSection.style.display === "none") {
-                    yourOrdersSection.style.display = "block";
-                    toggleOrdersBtn.textContent = "Hide Orders";
-                } else {
-                    yourOrdersSection.style.display = "none";
-                    toggleOrdersBtn.textContent = "Show Orders";
+            function setTab(mode) {
+                const ordersActive = mode === "orders";
+                ordersPane.classList.toggle("hidden", !ordersActive);
+                timelinePane.classList.toggle("hidden", ordersActive);
+
+                tabOrders.classList.toggle("bg-gray-200", ordersActive);
+                tabOrders.classList.toggle("dark:bg-gray-700", ordersActive);
+                tabOrders.classList.toggle("text-gray-900", ordersActive);
+                tabOrders.classList.toggle("dark:text-gray-100", ordersActive);
+                tabOrders.classList.toggle("text-gray-700", !ordersActive);
+                tabOrders.classList.toggle("dark:text-gray-300", !ordersActive);
+
+                tabTimeline.classList.toggle("bg-gray-200", !ordersActive);
+                tabTimeline.classList.toggle("dark:bg-gray-700", !ordersActive);
+                tabTimeline.classList.toggle("text-gray-900", !ordersActive);
+                tabTimeline.classList.toggle("dark:text-gray-100", !ordersActive);
+                tabTimeline.classList.toggle("text-gray-700", ordersActive);
+                tabTimeline.classList.toggle("dark:text-gray-300", ordersActive);
+
+                localStorage.setItem("dashboard-active-tab", mode);
+
+                if (!ordersActive) {
+                    // Force timeline redraw after becoming visible.
+                    window.dispatchEvent(new Event("resize"));
                 }
-            });
-        });
-    </script>
+            }
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const searchInput = document.getElementById("search-dashboard");
-            const orderRows = document.querySelectorAll("table tbody tr");
-            searchInput.addEventListener("input", () => {
-                const term = searchInput.value.toLowerCase();
-                orderRows.forEach(row => {
-                    const rowText = row.textContent.toLowerCase();
-                    row.style.display = rowText.includes(term) ? "" : "none";
-                });
-            });
+            tabOrders.addEventListener("click", () => setTab("orders"));
+            tabTimeline.addEventListener("click", () => setTab("timeline"));
+
+            const saved = localStorage.getItem("dashboard-active-tab");
+            setTab(saved === "timeline" ? "timeline" : "orders");
         });
     </script>
 
@@ -419,3 +452,4 @@
 
 </body>
 </html>
+
