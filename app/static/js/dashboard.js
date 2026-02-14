@@ -18,6 +18,31 @@ let currentPage = 1;
 let pageSize = 10;
 const PAGE_SIZE_FIXED = 10;
 
+function ensureTimelineWeekHeader() {
+  const track = document.getElementById("timeline-week-track");
+  if (!track || track.childElementCount > 0) return;
+  for (let week = 1; week <= 52; week += 1) {
+    const label = document.createElement("span");
+    label.textContent = `W${week}`;
+    track.appendChild(label);
+  }
+}
+
+function syncTimelineWeekHeader(chart) {
+  const header = document.getElementById("timeline-week-header");
+  const track = document.getElementById("timeline-week-track");
+  if (!header || !track) return;
+  if (!chart || !chart.chartArea) {
+    header.classList.add("hidden");
+    return;
+  }
+  const { left, right } = chart.chartArea;
+  const rightPad = Math.max(0, chart.width - right);
+  track.style.marginLeft = `${Math.max(0, left)}px`;
+  track.style.marginRight = `${rightPad}px`;
+  header.classList.remove("hidden");
+}
+
 /* -------------------- small helper -------------------- */
 async function getJSON(url) {
   const res = await fetch(url, { credentials: "same-origin" });
@@ -137,9 +162,12 @@ function filterData(data, query) {
 function renderTimeline(data) {
   const loadingIndicator = document.getElementById("timeline-loading");
   const canvas = document.getElementById("timelineChart");
+  const weekHeader = document.getElementById("timeline-week-header");
   if (!canvas) return;
+  ensureTimelineWeekHeader();
 
   if (loadingIndicator) loadingIndicator.style.display = "block";
+  if (weekHeader) weekHeader.classList.add("hidden");
   canvas.style.display = "none";
 
   if (!Array.isArray(data) || data.length === 0) {
@@ -191,12 +219,12 @@ function renderTimeline(data) {
       borderWidth: 1,
     });
 
-    const transportLabel = {
-      sea: "SEA",
-      air: "AIR",
-      truck: "TRK",
-    }[String(order.transport || "").toLowerCase()] || (order.transport || "N/A");
-    labels.push(`${transportLabel} ${order.product_name} (${order.order_number})`);
+    const transportIconLabel = {
+      sea: "⛴",
+      air: "✈",
+      truck: "⛟",
+    }[String(order.transport || "").toLowerCase()] || "📦";
+    labels.push(`${transportIconLabel} ${order.product_name} (${order.order_number})`);
     displayIndex += 1;
   });
 
@@ -209,11 +237,13 @@ function renderTimeline(data) {
     return;
   }
 
-  const heightPerOrder = 30;
-  const headerHeight = 50;
-  const canvasHeight = Math.max(200, chartData.length * heightPerOrder + headerHeight);
+  const heightPerOrder = 50;
+  const headerHeight = 58;
+  const canvasHeight = Math.max(340, chartData.length * heightPerOrder + headerHeight);
   const timelineContainer = canvas.parentElement;
-  timelineContainer.style.height = `${canvasHeight}px`;
+  timelineContainer.style.maxHeight = "760px";
+  timelineContainer.style.overflowY = "auto";
+  timelineContainer.style.overflowX = "hidden";
   canvas.style.height = `${canvasHeight}px`;
 
   if (loadingIndicator) loadingIndicator.style.display = "none";
@@ -241,6 +271,8 @@ function renderTimeline(data) {
           backgroundColor: chartData.map((item) => item.backgroundColor),
           borderColor: chartData.map((item) => item.borderColor),
           borderWidth: 1,
+          barPercentage: 0.75,
+          categoryPercentage: 0.88,
         },
       ],
     },
@@ -253,13 +285,10 @@ function renderTimeline(data) {
           min: yearStart,
           max: yearEnd,
           title: {
-            display: true,
-            text: "Timeline",
-            font: { size: 16, weight: "600" },
-            color: colors.title,
+            display: false,
           },
           ticks: {
-            callback: (value) => `W${getWeekNumber(new Date(value))}`,
+            display: false,
             color: colors.text,
             font: { size: 12, weight: "500" },
             autoSkip: true,
@@ -278,7 +307,7 @@ function renderTimeline(data) {
           ticks: {
             callback: (_, i) => labels[i],
             color: colors.text,
-            font: { size: 16, weight: "500" },
+            font: { size: 14, weight: "500", lineHeight: 1.45 },
             autoSkip: false,
             padding: 5,
           },
@@ -321,6 +350,7 @@ function renderTimeline(data) {
       maintainAspectRatio: false,
     },
   });
+  requestAnimationFrame(() => syncTimelineWeekHeader(chartInstance));
 }
 
 /* -------------------- sorting -------------------- */

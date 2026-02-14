@@ -1,7 +1,12 @@
-﻿# FlowLogix Roadmap
+# FlowLogix Roadmap
 
 ## North Star
-API-first operations platform with a React UI, deterministic role-safe data access, and read-only AI decision support added later under strict governance.
+API-first operations platform with a modernized legacy Flask UI, deterministic role-safe data access, and read-only AI decision support added later under strict governance.
+
+## Strategy Update (2026)
+- Primary UI path is now legacy-first: Flask templates + modular vanilla JS/CSS.
+- React remains optional/experimental and is not the migration target.
+- Backend API contracts stay authoritative and continue to drive deterministic behavior.
 
 ## Completed: Sprint 1 (API v1 Hardened)
 - Delivered `GET /api/v1/orders` with RBAC, strict validation, pagination, filtering, and deterministic sorting.
@@ -9,40 +14,46 @@ API-first operations platform with a React UI, deterministic role-safe data acce
 - Added JSON-native API error behavior and normalized date output for frontend consistency.
 - Preserved legacy UI while introducing API-first architecture incrementally.
 
-## Current: Sprint 2 (React Foundation)
+## Current: Sprint 2 (Legacy Modernization Baseline)
 ### Scope
-- Build React app shell and authenticated session bootstrap using `/api/v1/auth/me`.
-- Implement Orders page first (table-centric) consuming `/api/v1/orders`.
-- Add URL-synced query state for filter, sort, and pagination.
-- Add resilient states: loading, empty, validation-error, unauthorized.
+- Keep Orders and Timeline in legacy dashboard as the production path.
+- Align table behavior with API query semantics (pagination, filtering, sorting).
+- Improve timeline UX in legacy UI:
+  - centered legend in top controls row
+  - sticky week-number row (`W1..W52`) above chart
+- Preserve existing backend route compatibility and operational workflows.
 
 ### Acceptance Criteria
-- Orders table renders paginated server data with parity to API query semantics.
-- URL reload reproduces the same table state deterministically.
-- Invalid query inputs surface actionable validation details from API `400` payloads.
-- No regression to Flask template routes.
+- Legacy Orders table behavior remains deterministic and API-aligned.
+- Timeline controls and sticky week row are stable across viewport resize.
+- No regressions in add/edit/delete/move delivery flows.
+- Existing Flask routes remain primary and stable.
 
-## Next: Sprint 3 (Timeline + Visualization)
+## Next: Sprint 3 (Legacy JS/CSS Modularization)
 ### Scope
-- Add timeline visualization bound to the same dataset contract as table view.
-- Enable row-to-timeline and timeline-to-row interaction sync.
-- Preserve one query state model for both table and timeline.
+- Split `app/static/js/dashboard.js` into focused modules:
+  - api/data loading
+  - table/pagination
+  - timeline rendering
+  - form/actions
+- Isolate timeline-specific styles from global `style.css` into scoped sections/files.
+- Reduce encoding/mojibake debt and normalize text/labels to clean UTF-8-safe strings.
 
 ### Risks
-- Drift risk if timeline applies client-only transforms not used by table.
-- Performance risk on larger pages if visualization redraw is not throttled.
-- UX risk if timeline interactions hide source-of-truth table state.
+- Regression risk during extraction from monolithic JS.
+- Hidden coupling between template markup and JS selectors.
+- CSS cascade side effects when splitting shared styles.
 
-## Sprint 4 (Write Flows + RBAC UI Controls)
+## Sprint 4 (Write Flow Hardening + RBAC UI Consistency)
 ### Scope
-- Add create/update flows for selected entities via API write endpoints.
-- Introduce role-aware action controls in React UI.
-- Add optimistic/confirmed update patterns with server truth reconciliation.
+- Harden legacy write flows with clearer error handling and state feedback.
+- Ensure UI action visibility exactly mirrors backend role permissions.
+- Add integration checks around role-scoped actions and transitions.
 
 ### Risks
-- Authorization bugs if UI role checks diverge from backend RBAC enforcement.
-- Data integrity regressions without idempotency and input constraints.
-- Auditability gaps if write actions are not consistently logged.
+- Authorization drift between UI affordances and backend enforcement.
+- Data integrity regressions without strict validation and idempotent action handling.
+- Auditability gaps if mutating actions are not consistently logged.
 
 ## Sprint 5 (AI Read-Only Decision Support + Hardening)
 ### Scope
@@ -56,22 +67,23 @@ API-first operations platform with a React UI, deterministic role-safe data acce
 - Human decision remains authoritative; AI suggestions are advisory.
 
 ## Explicit Tradeoffs
-- Server-side sorting/filtering chosen to guarantee deterministic, RBAC-safe, reusable contracts across clients.
-- Strict `400` validation chosen to prevent silent coercion and ambiguous UI behavior.
-- Timeline deferred to Sprint 3 to first stabilize data contracts and table UX baseline in Sprint 2.
+- Legacy-first UI keeps delivery velocity high and avoids migration churn.
+- Server-side sorting/filtering remains the deterministic, RBAC-safe source of truth.
+- Strict `400` validation remains to prevent silent coercion and ambiguous UI behavior.
 
 ## Demo Checklist
 - Seed data available and deterministic enough for repeatable demo flows.
 - Demo user prepared with known role and credentials.
 - Capture screenshots:
   - Orders table with filters + pagination.
+  - Timeline with centered legend + sticky week row.
   - API validation error state (`400`) surfaced in UI.
   - Role-scoped view differences (Viewer vs Admin where available).
 - Verify `/api/v1/orders` and `/api/v1/auth/me` in a fresh local run.
 
-## Out of Scope (Current Migration)
+## Out of Scope (Current Phase)
+- Full frontend rewrite/migration to React.
 - External ERP/WMS integrations.
 - Notification workflows (email/SMS/chat).
 - Multi-tenant billing and subscription management.
-- Full design-system migration.
 - Autonomous AI actions.

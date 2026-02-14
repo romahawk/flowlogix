@@ -323,31 +323,35 @@
 
         <!-- Timeline Pane -->
         <div id="dashboard-timeline-pane" class="hidden">
-        <!-- Year Filter Dropdown -->
-        <div class="mb-4">
-            <label for="year-filter" class="text-sm font-medium text-gray-900 dark:text-gray-500 mr-2">Select Year:</label>
-            <select id="year-filter" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-                <!-- Options will be populated dynamically -->
-            </select>
+        <div class="timeline-controls mb-4">
+            <div class="timeline-year-filter">
+                <label for="year-filter" class="text-sm font-medium text-gray-900 dark:text-gray-500 mr-2">Select Year:</label>
+                <select id="year-filter" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+                    <!-- Options will be populated dynamically -->
+                </select>
+            </div>
+            <div class="legend mb-0">
+                <span class="legend-item cursor-pointer" data-status="in process">
+                    <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(255, 165, 0, 0.8);"></span> In Process
+                </span>
+                <span class="legend-item cursor-pointer" data-status="en route">
+                    <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(0, 123, 255, 0.8);"></span> En Route
+                </span>
+                <span class="legend-item cursor-pointer" data-status="arrived">
+                    <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(144, 238, 144, 0.8);"></span> Arrived
+                </span>
+            </div>
+            <div aria-hidden="true"></div>
         </div>
         <div id="year-warning" class="hidden text-yellow-700 bg-yellow-100 border border-yellow-400 px-4 py-2 rounded text-sm mt-4">
             вљ пёЏ Some orders may exist for other years. Adjust the year filter to see them.
         </div>
 
-        <!-- Legend for Timeline Chart -->
-        <div class="legend flex space-x-4 mb-4">
-            <span class="legend-item cursor-pointer" data-status="in process">
-                <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(255, 165, 0, 0.8);"></span> In Process
-            </span>
-            <span class="legend-item cursor-pointer" data-status="en route">
-                <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(0, 123, 255, 0.8);"></span> En Route
-            </span>
-            <span class="legend-item cursor-pointer" data-status="arrived">
-                <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(144, 238, 144, 0.8);"></span> Arrived
-            </span>
-        </div>
         <div id="timeline-loading" style="overflow-y: auto; max-height: 800px;" class="text-gray-600 dark:text-gray-400">Loading timeline...</div>
         <div class="timeline-container bg-gray-100 dark:bg-gray-900 p-4 rounded-lg shadow-md">
+            <div id="timeline-week-header" class="timeline-week-header hidden" aria-hidden="true">
+                <div id="timeline-week-track" class="timeline-week-track"></div>
+            </div>
             <canvas id="timelineChart"></canvas>
         </div>
         <div class="flex justify-center space-x-4 mt-4">
