@@ -17,6 +17,7 @@ def role_required(required_role):
 # === Role Constants ===
 ADMIN = 'admin'
 SUPERUSER = 'superuser'
+USER = 'user'
 
 # Define company-specific roles
 USER_COMPANY_ROLES = [
@@ -32,7 +33,7 @@ USER_COMPANY_ROLES = [
     'user_company10',
 ]
 
-ALL_ROLES = [ADMIN, SUPERUSER] + USER_COMPANY_ROLES
+ALL_ROLES = [ADMIN, SUPERUSER, USER] + USER_COMPANY_ROLES
 
 # === Role Permissions Map ===
 ROLE_PERMISSIONS = {
@@ -44,6 +45,13 @@ ROLE_PERMISSIONS = {
     SUPERUSER: {
         'can_view_all': True,
         'can_edit': False,
+        'can_manage_users': False,
+    },
+    # Legacy default user role used by existing accounts.
+    # Keep scoped visibility, allow operational edits (e.g. move to warehouse).
+    USER: {
+        'can_view_all': False,
+        'can_edit': True,
         'can_manage_users': False,
     },
 }
@@ -60,12 +68,12 @@ for role in USER_COMPANY_ROLES:
 
 def can_view_all(role):
     """Can this role view all orders in the system?"""
-    return ROLE_PERMISSIONS.get(role, {}).get('can_view_all', False)
+    return ROLE_PERMISSIONS.get(str(role).lower(), {}).get('can_view_all', False)
 
 def can_edit(role):
     """Can this role add/edit/delete orders?"""
-    return ROLE_PERMISSIONS.get(role, {}).get('can_edit', False)
+    return ROLE_PERMISSIONS.get(str(role).lower(), {}).get('can_edit', False)
 
 def can_manage_users(role):
     """Can this role create/delete users?"""
-    return ROLE_PERMISSIONS.get(role, {}).get('can_manage_users', False)
+    return ROLE_PERMISSIONS.get(str(role).lower(), {}).get('can_manage_users', False)

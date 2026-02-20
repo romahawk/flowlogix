@@ -1,23 +1,24 @@
-﻿# FlowLogix UX/UI Spec (Sprint 2-3)
+# FlowLogix UX/UI Spec (Legacy-First, Sprint 2-4)
 
 ## UX Principles
-- Single source of truth: API response + URL query state define rendered state.
-- Deterministic views: identical URL/query yields identical table and timeline output.
+- Single source of truth: API response + URL/query state define rendered state.
+- Deterministic views: identical query inputs yield identical table and timeline output.
 - Fast scanning: prioritize dense, readable tabular layout for operations users.
 - Role clarity: actions and visibility reflect backend RBAC policy with no hidden privilege escalation.
+- Incremental modernization: improve the existing legacy UI in-place before considering rewrites.
 
 ## Information Architecture
-### Current and Planned Pages
-- Login (legacy Flask): existing auth entry point.
-- Orders (React, Sprint 2): primary operational page and first migration target.
-- Warehouse (React, phased): post-arrival inventory stage.
-- Delivered (later): finalized shipments and historical review.
+### Current and Planned Pages (Legacy Flask UI)
+- Login: existing auth entry point.
+- Dashboard Orders + Timeline: primary operational interface.
+- Warehouse: post-arrival inventory stage.
+- Delivered: finalized shipments and historical review.
 - Users (admin): user and role management.
-- Activity Logs (later): audit and operational event trace.
+- Activity Logs: audit and operational event trace.
 
-## Orders Page Spec (Sprint 2)
+## Orders + Timeline Page Spec
 ### Header
-- App branding + primary nav.
+- App branding + primary navigation.
 - Signed-in user identity + role badge.
 - Theme toggle.
 
@@ -32,15 +33,23 @@
 ### Table Behaviors
 - Sort is server-driven via `sort` query key.
 - Pagination is server-driven via `page` and `per_page`.
-- Loading skeleton shown during fetch transitions.
-- Empty state shown when `data=[]` for current filters.
-- Error banner for API/network/auth/validation failures.
+- Any filter/sort change resets page to first page.
+- Empty state shown when no rows match current filters.
+- Validation/API errors surfaced clearly from backend response.
 
-### URL-Synced Query State
+### Timeline Behaviors (Legacy Chart)
+- Timeline consumes the same filtered/sorted dataset contract as table view.
+- No drift allowed between timeline ordering and table ordering.
+- Legend is centered in the top timeline controls row.
+- Week-number strip (`W1..W52`) is sticky at the top of timeline container.
+- Year selector remains visible in timeline controls row.
+
+## Query and Determinism Contract
 Required query keys:
 - `page` (default `1`)
 - `per_page` (default `25`)
 - `sort` (default `eta:desc,etd:desc,order_date:desc,id:desc`)
+
 Optional filter keys:
 - `filter[transit_status]`
 - `filter[year]`
@@ -50,17 +59,9 @@ Optional filter keys:
 - `filter[transport]`
 
 Rules:
-- UI controls always reflect URL state.
-- Any filter/sort change resets `page=1`.
-- Invalid query composition shows API validation errors from `400` response.
-
-## Timeline Page Spec (Sprint 3)
-- Timeline must consume the same filtered/sorted dataset contract as table.
-- No drift allowed between timeline ordering and table ordering.
-- Interaction rules:
-  - Hover timeline item highlights corresponding table row.
-  - Hover table row highlights corresponding timeline item.
-  - Click on either side pins shared highlight/focus state.
+- UI controls reflect current query state.
+- Invalid query composition surfaces backend `400` validation details.
+- Backend remains authoritative for sort/filter/pagination semantics.
 
 ## RBAC-Driven UI Behavior
 - Viewer: read-only list access, no mutating controls rendered.
@@ -69,20 +70,18 @@ Rules:
 - UI role checks are advisory; backend authorization is authoritative.
 
 ## Accessibility and Responsiveness Baseline
-- Desktop-first layout, mobile acceptable for read-and-filter tasks.
-- Minimum keyboard reachability for filters, table navigation, and pagination controls.
-- Color contrast and status indicators must not rely on color alone.
-- Error messages must be clear, concise, and screen-reader friendly.
+- Desktop-first layout; mobile supports read/filter workflows.
+- Keyboard reachability for filters, table navigation, and pagination controls.
+- Color/status communication does not rely on color alone.
+- Error messages are concise and screen-reader friendly.
 
-## Component Inventory (High-Level)
-- `AppShell`
-- `OrdersToolbar`
-- `OrdersTable`
-- `Pagination`
-- `ErrorBanner`
-- `EmptyState`
+## Frontend Modernization Guidelines (Legacy)
+- Prefer small, testable JS modules over monolithic scripts.
+- Keep template IDs/data attributes stable when extracting modules.
+- Scope timeline/table styles to reduce global cascade side effects.
+- Preserve backward compatibility with Flask routes and forms.
 
-## Non-Goals
-- Pixel-perfect visual design parity during migration.
-- Full design-system migration in Sprint 2-3.
-- Heavy animation or motion-rich interactions.
+## Non-Goals (Current Phase)
+- Full UI rewrite to React.
+- Pixel-perfect design-system migration.
+- Heavy animation/motion-rich UI.

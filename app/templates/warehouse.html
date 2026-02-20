@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -31,9 +31,7 @@
             </select>
             <input type="text" name="notes" placeholder="Notes (optional)" class="p-2 rounded border dark:bg-gray-700">
         </div>
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-            📥 Save Manual Order
-        </button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i>Save Manual Order</button>
     </form>
 
     <main class="flex flex-col h-full overflow-hidden p-4">
@@ -43,7 +41,7 @@
         {% endfor %}
         {% endwith %}
 
-        <h2 class="text-2xl font-bold mb-4">📦 Warehouse Stock</h2>
+        <h2 class="text-2xl font-bold mb-4 inline-flex items-center gap-2"><i data-lucide="package" class="w-6 h-6"></i>Warehouse Stock</h2>
 
         <!-- Search & Clear -->
         <div class="mb-4 flex items-center justify-between gap-2">
@@ -116,7 +114,7 @@
                                 class="flex items-center justify-center gap-1">
                                 {{ label }}
                                 {% if sort_key == col %}
-                                <span>{{ '↑' if sort_dir == 'asc' else '↓' }}</span>
+                                <span>{{ 'в†‘' if sort_dir == 'asc' else 'в†“' }}</span>
                                 {% endif %}
                             </a>
                         </th>
@@ -141,20 +139,20 @@
                             {% elif item.ata %}
                             {{ item.ata }}
                             {% else %}
-                            —
+                            вЂ”
                             {% endif %}
                         </td>
 
 
                         <td class="px-4 py-2 text-xs">
                             {% if item.transport == 'air' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">✈️ Air</span>
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="plane" class="w-3.5 h-3.5"></i>Air</span>
                             {% elif item.transport == 'sea' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">🚢 Sea</span>
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="ship" class="w-3.5 h-3.5"></i>Sea</span>
                             {% elif item.transport == 'truck' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">🚚 Truck</span>
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i>Truck</span>
                             {% else %}
-                            —
+                            вЂ”
                             {% endif %}
                         </td>
                         <td class="px-4 py-2"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">In
@@ -220,7 +218,7 @@
                                 {{ item.notes[:30] }}{% if item.notes|length > 30 %}...{% endif %}
                             </span>
                             {% else %}
-                            —
+                            вЂ”
                             {% endif %}
                         </td>
 
@@ -243,11 +241,11 @@
             <div class="flex gap-2">
                 {% if pagination.has_prev %}
                 <a href="{{ url_for('warehouse.warehouse', page=pagination.prev_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">⬅ Prev</a>
+                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">в¬… Prev</a>
                 {% endif %}
                 {% if pagination.has_next %}
                 <a href="{{ url_for('warehouse.warehouse', page=pagination.next_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">Next ➡</a>
+                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">Next вћЎ</a>
                 {% endif %}
             </div>
         </div>
@@ -323,7 +321,7 @@
             //     headers.forEach(h => {
             //         const indicator = h.querySelector('.sort-indicator');
             //         if (h.getAttribute('data-sort') === currentSort.key) {
-            //             indicator.textContent = currentSort.direction === 'asc' ? '↑' : '↓';
+            //             indicator.textContent = currentSort.direction === 'asc' ? 'в†‘' : 'в†“';
             //         } else {
             //             indicator.textContent = '';
             //         }
@@ -402,10 +400,10 @@
                         // Load editing script after content is loaded
                         const script = document.createElement('script');
                         script.src = '/static/js/view_stockreport.js';
-                        script.onload = () => console.log("✅ view_stockreport.js loaded");
+                        script.onload = () => console.log("вњ… view_stockreport.js loaded");
                         document.body.appendChild(script);
                     } catch (error) {
-                        console.error("❌ Error loading stockreport modal:", error);
+                        console.error("вќЊ Error loading stockreport modal:", error);
                         alert("Failed to open stockreport modal.");
                         closeModal();
                     }

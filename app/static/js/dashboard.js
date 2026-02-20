@@ -13,6 +13,35 @@ let chartInstance = null;
 let sortDirection = { order_date: "desc" };
 let lastSortKey = "order_date";
 let lastSortDirection = "desc";
+let currentTableData = [];
+let currentPage = 1;
+let pageSize = 10;
+const PAGE_SIZE_FIXED = 10;
+
+function ensureTimelineWeekHeader() {
+  const track = document.getElementById("timeline-week-track");
+  if (!track || track.childElementCount > 0) return;
+  for (let week = 1; week <= 52; week += 1) {
+    const label = document.createElement("span");
+    label.textContent = `W${week}`;
+    track.appendChild(label);
+  }
+}
+
+function syncTimelineWeekHeader(chart) {
+  const header = document.getElementById("timeline-week-header");
+  const track = document.getElementById("timeline-week-track");
+  if (!header || !track) return;
+  if (!chart || !chart.chartArea) {
+    header.classList.add("hidden");
+    return;
+  }
+  const { left, right } = chart.chartArea;
+  const rightPad = Math.max(0, chart.width - right);
+  track.style.marginLeft = `${Math.max(0, left)}px`;
+  track.style.marginRight = `${rightPad}px`;
+  header.classList.remove("hidden");
+}
 
 /* -------------------- small helper -------------------- */
 async function getJSON(url) {
@@ -49,7 +78,7 @@ function initDarkModeToggle() {
 
     const filteredData = filterData(
       allOrders,
-      document.getElementById("order-filter")?.value || ""
+      document.getElementById("search-dashboard")?.value || ""
     );
     const sortedData = sortData(filteredData, "order_date", true);
     renderTimeline(sortedData);
@@ -133,9 +162,12 @@ function filterData(data, query) {
 function renderTimeline(data) {
   const loadingIndicator = document.getElementById("timeline-loading");
   const canvas = document.getElementById("timelineChart");
+  const weekHeader = document.getElementById("timeline-week-header");
   if (!canvas) return;
+  ensureTimelineWeekHeader();
 
   if (loadingIndicator) loadingIndicator.style.display = "block";
+  if (weekHeader) weekHeader.classList.add("hidden");
   canvas.style.display = "none";
 
   if (!Array.isArray(data) || data.length === 0) {
@@ -187,8 +219,12 @@ function renderTimeline(data) {
       borderWidth: 1,
     });
 
-    const transportIcon = { sea: "🚢", air: "✈️", truck: "🚚" }[order.transport] || order.transport;
-    labels.push(`${transportIcon} ${order.product_name} (${order.order_number})`);
+    const transportIconLabel = {
+      sea: "⛴",
+      air: "✈",
+      truck: "⛟",
+    }[String(order.transport || "").toLowerCase()] || "📦";
+    labels.push(`${transportIconLabel} ${order.product_name} (${order.order_number})`);
     displayIndex += 1;
   });
 
@@ -201,11 +237,13 @@ function renderTimeline(data) {
     return;
   }
 
-  const heightPerOrder = 30;
-  const headerHeight = 50;
-  const canvasHeight = Math.max(200, chartData.length * heightPerOrder + headerHeight);
+  const heightPerOrder = 50;
+  const headerHeight = 58;
+  const canvasHeight = Math.max(340, chartData.length * heightPerOrder + headerHeight);
   const timelineContainer = canvas.parentElement;
-  timelineContainer.style.height = `${canvasHeight}px`;
+  timelineContainer.style.maxHeight = "760px";
+  timelineContainer.style.overflowY = "auto";
+  timelineContainer.style.overflowX = "hidden";
   canvas.style.height = `${canvasHeight}px`;
 
   if (loadingIndicator) loadingIndicator.style.display = "none";
@@ -233,6 +271,8 @@ function renderTimeline(data) {
           backgroundColor: chartData.map((item) => item.backgroundColor),
           borderColor: chartData.map((item) => item.borderColor),
           borderWidth: 1,
+          barPercentage: 0.75,
+          categoryPercentage: 0.88,
         },
       ],
     },
@@ -245,13 +285,10 @@ function renderTimeline(data) {
           min: yearStart,
           max: yearEnd,
           title: {
-            display: true,
-            text: "Timeline",
-            font: { size: 16, weight: "600" },
-            color: colors.title,
+            display: false,
           },
           ticks: {
-            callback: (value) => `W${getWeekNumber(new Date(value))}`,
+            display: false,
             color: colors.text,
             font: { size: 12, weight: "500" },
             autoSkip: true,
@@ -270,7 +307,7 @@ function renderTimeline(data) {
           ticks: {
             callback: (_, i) => labels[i],
             color: colors.text,
-            font: { size: 16, weight: "500" },
+            font: { size: 14, weight: "500", lineHeight: 1.45 },
             autoSkip: false,
             padding: 5,
           },
@@ -286,7 +323,7 @@ function renderTimeline(data) {
               const [start, end] = context.raw.x;
               const startDate = new Date(start).toLocaleDateString();
               const endDate = new Date(end).toLocaleDateString();
-              return `Delivery: ${startDate} → ${endDate}`;
+              return `Delivery: ${startDate} в†’ ${endDate}`;
             },
           },
         },
@@ -313,6 +350,7 @@ function renderTimeline(data) {
       maintainAspectRatio: false,
     },
   });
+  requestAnimationFrame(() => syncTimelineWeekHeader(chartInstance));
 }
 
 /* -------------------- sorting -------------------- */
@@ -326,7 +364,7 @@ function sortData(data, key, forceDescending = false) {
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     const thKey = th.getAttribute("data-sort");
     const indicator = th.querySelector(".sort-indicator");
-    if (indicator) indicator.textContent = thKey === key ? (direction === "asc" ? "↑" : "↓") : "";
+    if (indicator) indicator.textContent = thKey === key ? (direction === "asc" ? "^" : "v") : "";
   });
 
   return [...data].sort((a, b) => {
@@ -351,7 +389,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const orderDateHeader = document.querySelector('th[data-sort="order_date"]');
   if (orderDateHeader) {
     const indicator = orderDateHeader.querySelector(".sort-indicator");
-    if (indicator) indicator.textContent = "↓";
+    if (indicator) indicator.textContent = "v";
   }
 
   Chart.register(window["chartjs-plugin-annotation"]);
@@ -382,21 +420,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .catch((err) => console.error("products load error:", err));
   };
   initializeProductSelect();
-
-  /* ---------- dashboard search ---------- */
-  function setupDashboardSearch() {
-    const searchInput = document.getElementById("search-dashboard");
-    if (!searchInput) return;
-    searchInput.addEventListener("input", () => {
-      const query = searchInput.value.toLowerCase();
-      const rows = document.querySelectorAll("table tbody tr");
-      rows.forEach((row) => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(query) ? "" : "none";
-      });
-    });
-  }
-  setupDashboardSearch();
 
   /* ---------- YEAR + ORDERS loading via new APIs ---------- */
 
@@ -468,7 +491,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const filteredData = filterData(
         allOrders,
-        document.getElementById("order-filter")?.value || ""
+        document.getElementById("search-dashboard")?.value || ""
       );
       const sortedData = sortData(filteredData, lastSortKey, lastSortDirection === "desc");
       updateTable(sortedData);
@@ -494,43 +517,95 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // ↓ This replaced the previous "fetchAndRender" that called /api/orders with no year
+  // в†“ This replaced the previous "fetchAndRender" that called /api/orders with no year
   bootstrapYearsAndOrders();
 
-  /* ---------- table render (unchanged) ---------- */
-  function updateTable(data) {
+  const firstPageBtn = document.getElementById("orders-first-page");
+  const prevPageBtn = document.getElementById("orders-prev-page");
+  const nextPageBtn = document.getElementById("orders-next-page");
+  const lastPageBtn = document.getElementById("orders-last-page");
+  if (firstPageBtn) {
+    firstPageBtn.addEventListener("click", () => {
+      if (currentPage !== 1) {
+        currentPage = 1;
+        renderTablePage();
+      }
+    });
+  }
+  if (prevPageBtn) {
+    prevPageBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage -= 1;
+        renderTablePage();
+      }
+    });
+  }
+  if (nextPageBtn) {
+    nextPageBtn.addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(currentTableData.length / pageSize));
+      if (currentPage < totalPages) {
+        currentPage += 1;
+        renderTablePage();
+      }
+    });
+  }
+  if (lastPageBtn) {
+    lastPageBtn.addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(currentTableData.length / pageSize));
+      if (currentPage !== totalPages) {
+        currentPage = totalPages;
+        renderTablePage();
+      }
+    });
+  }
+
+  function formatQuantity(value) {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed.toFixed(2) : "-";
+  }
+
+  function renderTableRows(rows) {
     const tbody = document.querySelector("table tbody");
     if (!tbody) return;
-
     tbody.innerHTML = "";
-    if (!data || data.length === 0) {
+
+    if (!rows || rows.length === 0) {
       const row = document.createElement("tr");
       row.innerHTML =
         `<td colspan="15" class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200 text-center">No orders found</td>`;
       tbody.appendChild(row);
+      lucide.createIcons();
       return;
     }
 
-    data.forEach((order) => {
-      const transportIcon = { sea: "🚢", air: "✈️", truck: "🚚" }[order.transport] || order.transport;
+    rows.forEach((order) => {
+      const transportRaw = String(order.transport || "").toLowerCase();
+      const transportIcon =
+        transportRaw === "sea"
+          ? '<i data-lucide="ship" class="w-4 h-4 inline-block"></i>'
+          : transportRaw === "air"
+            ? '<i data-lucide="plane" class="w-4 h-4 inline-block"></i>'
+            : transportRaw === "truck"
+              ? '<i data-lucide="truck" class="w-4 h-4 inline-block"></i>'
+              : '<i data-lucide="package" class="w-4 h-4 inline-block"></i>';
       const row = document.createElement("tr");
       row.classList.add("bg-gray-100","dark:bg-gray-900","hover:bg-gray-200","dark:hover:bg-gray-700");
 
       row.innerHTML = `
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200" title="Delivery Year: ${order.delivery_year}">${order.order_date || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.order_number || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.product_name || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.buyer || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.responsible || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.quantity ?? "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.required_delivery || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.terms_of_delivery || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.payment_date || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.etd || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.eta || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.ata || ""}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${order.transit_status || "—"}</td>
-        <td class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200">${transportIcon}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap" title="Delivery Year: ${order.delivery_year}">${order.order_date || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.order_number || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.product_name || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.buyer || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.responsible || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${formatQuantity(order.quantity)}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.required_delivery || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.terms_of_delivery || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.payment_date || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.etd || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.eta || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.ata || ""}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.transit_status || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${transportIcon}</td>
         <td class="px-2 py-2 text-center text-xs sm:text-sm">
           <div class="flex flex-col sm:flex-row sm:justify-center gap-1 sm:gap-2">
             ${
@@ -563,13 +638,77 @@ document.addEventListener("DOMContentLoaded", function () {
     attachActionHandlers();
   }
 
+  function updatePaginationControls() {
+    const bar = document.getElementById("dashboard-pagination");
+    const first = document.getElementById("orders-first-page");
+    const prev = document.getElementById("orders-prev-page");
+    const next = document.getElementById("orders-next-page");
+    const last = document.getElementById("orders-last-page");
+    const label = document.getElementById("orders-page-label");
+    if (!bar || !first || !prev || !next || !last || !label) return;
+
+    const total = currentTableData.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+
+    if (total <= pageSize) {
+      bar.classList.add("hidden");
+      return;
+    }
+
+    bar.classList.remove("hidden");
+    first.disabled = currentPage <= 1;
+    prev.disabled = currentPage <= 1;
+    next.disabled = currentPage >= pages;
+    last.disabled = currentPage >= pages;
+    label.textContent = `Page ${currentPage} / ${pages} (${total} rows)`;
+  }
+
+  function renderTablePage() {
+    if (!currentTableData || currentTableData.length === 0) {
+      renderTableRows([]);
+      const bar = document.getElementById("dashboard-pagination");
+      if (bar) bar.classList.add("hidden");
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(currentTableData.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    renderTableRows(currentTableData.slice(start, end));
+    updatePaginationControls();
+  }
+
+  function fitOrdersTableToViewport() {
+    const container = document.getElementById("orders-table-container");
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const footerReserve = 76; // pagination and breathing room
+    const available = Math.max(360, window.innerHeight - rect.top - footerReserve);
+    container.style.height = `${available}px`;
+    container.style.overflowY = "hidden";
+    updatePaginationControls();
+  }
+
+  /* ---------- table render ---------- */
+  function updateTable(data, keepPage = false) {
+    currentTableData = Array.isArray(data) ? data : [];
+    pageSize = PAGE_SIZE_FIXED;
+    if (!keepPage) currentPage = 1;
+    renderTablePage();
+    fitOrdersTableToViewport();
+  }
+
   /* ---------- sorting clicks ---------- */
   document.querySelectorAll("table th[data-sort]").forEach((header) => {
     header.addEventListener("click", () => {
       const key = header.getAttribute("data-sort");
       const filteredData = filterData(
         allOrders,
-        document.getElementById("order-filter")?.value || ""
+        document.getElementById("search-dashboard")?.value || ""
       );
       const sortedData = sortData(filteredData, key);
       updateTable(sortedData);
@@ -578,7 +717,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* ---------- free text filter ---------- */
-  const orderFilterInput = document.getElementById("order-filter");
+  const orderFilterInput = document.getElementById("search-dashboard");
   if (orderFilterInput) {
     orderFilterInput.addEventListener("input", (e) => {
       const query = e.target.value;
@@ -598,7 +737,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const orderDateHeader = document.querySelector('th[data-sort="order_date"]');
       if (orderDateHeader) {
         const indicator = orderDateHeader.querySelector(".sort-indicator");
-        if (indicator) indicator.textContent = "↓";
+        if (indicator) indicator.textContent = "v";
       }
       document.querySelectorAll("th[data-sort]").forEach((th) => {
         if (th.getAttribute("data-sort") !== "order_date") {
@@ -623,7 +762,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       const filteredData = filterData(
         allOrders,
-        document.getElementById("order-filter")?.value || ""
+        document.getElementById("search-dashboard")?.value || ""
       );
       const sortedData = sortData(filteredData, "order_date", true);
       updateTable(sortedData);
@@ -826,9 +965,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   window.addEventListener("resize", () => {
+    fitOrdersTableToViewport();
     const filteredData = filterData(
       allOrders,
-      document.getElementById("order-filter")?.value || ""
+      document.getElementById("search-dashboard")?.value || ""
     );
     const sortedData = sortData(filteredData, lastSortKey, lastSortDirection === "desc");
     renderTimeline(sortedData);
@@ -864,3 +1004,4 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+

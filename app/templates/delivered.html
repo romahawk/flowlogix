@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -20,7 +20,7 @@
         {% endfor %}
         {% endwith %}
 
-        <h2 class="text-2xl font-bold mb-4">🚚 Delivered Goods</h2>
+        <h2 class="text-2xl font-bold mb-4 inline-flex items-center gap-2"><i data-lucide="truck" class="w-6 h-6"></i>Delivered Goods</h2>
 
         <!-- Filters -->
         <form method="GET" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-sm">
@@ -129,7 +129,7 @@
                                 class="flex items-center justify-center gap-1">
                                 {{ label }}
                                 {% if sort_key == col %}
-                                <span>{{ '↑' if sort_dir == 'asc' else '↓' }}</span>
+                                <span>{{ 'в†‘' if sort_dir == 'asc' else 'в†“' }}</span>
                                 {% endif %}
                             </a>
                         </th>
@@ -153,12 +153,12 @@
                         </td>
                         <td class="px-4 py-2 text-xs">
                             {% if item.transport == 'air' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">✈️ Air</span>
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="plane" class="w-3.5 h-3.5"></i>Air</span>
                             {% elif item.transport == 'sea' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">🚢 Sea</span>
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="ship" class="w-3.5 h-3.5"></i>Sea</span>
                             {% elif item.transport == 'truck' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">🚚 Truck</span>
-                            {% else %}—{% endif %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i>Truck</span>
+                            {% else %}вЂ”{% endif %}
                         </td>
                         <td class="px-4 py-2 text-xs">
                             {% if item.delivery_source == 'Direct from Transit' %}
@@ -166,7 +166,7 @@
                             {% elif item.delivery_source == 'From Warehouse' %}
                             <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">From Warehouse</span>
                             {% else %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">—</span>
+                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">вЂ”</span>
                             {% endif %}
                         </td>
                         <td class="px-4 py-2">
@@ -202,7 +202,7 @@
                                 class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded whitespace-nowrap max-w-[150px] overflow-hidden text-ellipsis inline-block">
                                 {{ item.notes[:30] }}{% if item.notes|length > 30 %}...{% endif %}
                             </span>
-                            {% else %}—{% endif %}
+                            {% else %}вЂ”{% endif %}
                         </td>
 
                         <td class="px-4 py-2 text-xs text-center">
@@ -210,18 +210,17 @@
                             {% if item.pod_filename %}
                             <div class="flex items-center justify-center space-x-2">
                                 <a href="{{ url_for('upload.view_pod', filename=item.pod_filename) }}" target="_blank"
-                                    class="text-blue-600 hover:underline">📎 View</a>
+                                    class="text-blue-600 hover:underline"><i data-lucide="paperclip" class="w-4 h-4 inline"></i> View</a>
                                 <form method="POST" action="{{ url_for('upload.delete_pod', item_id=item.id) }}">
                                     <button type="submit" class="text-red-500 hover:underline"
-                                        title="Delete POD">🗑️</button>
+                                        title="Delete POD"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
                                 </form>
                             </div>
                             {% else %}
                             <form method="POST" action="{{ url_for('upload.upload_pod', item_id=item.id) }}"
                                 enctype="multipart/form-data" class="flex flex-col items-center space-y-1">
                                 <label for="pod-{{ item.id }}"
-                                    class="cursor-pointer text-blue-600 text-sm hover:underline relative">📤
-                                    Upload...</label>
+                                    class="cursor-pointer text-blue-600 text-sm hover:underline relative inline-flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i>Upload...</label>
                                 <input id="pod-{{ item.id }}" name="file" type="file" accept=".pdf" class="hidden"
                                     onchange="this.form.submit()">
                             </form>
@@ -247,11 +246,11 @@
             <div class="flex gap-2">
                 {% if pagination.has_prev %}
                 <a href="{{ url_for('delivered.delivered', page=pagination.prev_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">⬅ Prev</a>
+                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">в¬… Prev</a>
                 {% endif %}
                 {% if pagination.has_next %}
                 <a href="{{ url_for('delivered.delivered', page=pagination.next_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">Next ➡</a>
+                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">Next вћЎ</a>
                 {% endif %}
             </div>
         </div>
@@ -327,11 +326,11 @@
                             const script = document.createElement('script');
                             script.src = '/static/js/view_stockreport.js';
                             script.setAttribute('data-id', 'view-stockreport');
-                            script.onload = () => console.log("✅ view_stockreport.js loaded");
+                            script.onload = () => console.log("вњ… view_stockreport.js loaded");
                             document.body.appendChild(script);
                         }
                     } catch (err) {
-                        console.error("❌ Failed to load report:", err);
+                        console.error("вќЊ Failed to load report:", err);
                         alert("Failed to open stockreport modal.");
                         closeModal();
                     }
@@ -358,13 +357,13 @@
 
                         if (response.ok) {
                             btn.closest("tr").remove();  // remove row from table
-                            alert("✅ Order restored to Dashboard.");
+                            alert("вњ… Order restored to Dashboard.");
                         } else {
-                            alert("❌ Failed to restore order.");
+                            alert("вќЊ Failed to restore order.");
                         }
                     } catch (error) {
                         console.error("Restore error:", error);
-                        alert("⚠️ An error occurred while restoring the order.");
+                        alert("вљ пёЏ An error occurred while restoring the order.");
                     }
                 });
             });
