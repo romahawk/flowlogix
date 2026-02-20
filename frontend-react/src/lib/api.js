@@ -1,4 +1,4 @@
-﻿function parseErrorPayload(payload, fallbackMessage) {
+function parseErrorPayload(payload, fallbackMessage) {
   const apiError = payload?.error;
   if (!apiError) {
     return { message: fallbackMessage, details: [] };
@@ -55,4 +55,18 @@ export async function getOrders(query, signal) {
     data: Array.isArray(payload.data) ? payload.data : [],
     meta: payload.meta || {},
   };
+}
+
+export async function postLegacyAction(path) {
+  const res = await fetch(path, {
+    method: "POST",
+    credentials: "include",
+    body: new FormData(),
+  });
+
+  if (!res.ok) {
+    throw { status: res.status, message: `Action failed (${res.status})`, details: [] };
+  }
+
+  return true;
 }

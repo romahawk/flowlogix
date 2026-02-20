@@ -1,4 +1,4 @@
-﻿export const DEFAULT_QUERY = {
+export const DEFAULT_QUERY = {
   page: "1",
   per_page: "25",
   sort: "eta:desc,etd:desc,order_date:desc,id:desc",
@@ -20,8 +20,8 @@ export function readQueryState() {
     }
   }
 
-  if (!next.page || Number(next.page) < 1) next.page = DEFAULT_QUERY.page;
-  if (!next.per_page || Number(next.per_page) < 1) next.per_page = DEFAULT_QUERY.per_page;
+  if (!String(next.page ?? "").trim()) next.page = DEFAULT_QUERY.page;
+  if (!String(next.per_page ?? "").trim()) next.per_page = DEFAULT_QUERY.per_page;
   if (!next.sort) next.sort = DEFAULT_QUERY.sort;
 
   return next;
@@ -48,6 +48,5 @@ export function writeQueryState(query, replace = false) {
 }
 
 export function withPageReset(query, patch) {
-  const merged = { ...query, ...patch, page: "1" };
-  return merged;
+  return { ...query, ...patch, page: "1" };
 }
