@@ -1,378 +1,420 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>Delivered Goods</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLogix &mdash; Delivered</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function () {
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 </head>
 
-<body class="flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+<body class="flex flex-col min-h-screen m-0 p-0 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
     {% include '_navbar.html' %}
 
-    <main class="flex flex-col h-full overflow-hidden p-4">
+    <main class="flex flex-col flex-1 overflow-hidden">
+
         <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-        <div class="bg-green-100 border px-4 py-2 rounded my-2 text-green-800">{{ message }}</div>
-        {% endfor %}
+        {% if messages %}
+        <div class="px-4 sm:px-6 pt-3">
+            {% for category, message in messages %}
+            <div class="border px-4 py-2 rounded-md mb-2 text-sm
+                {% if category == 'danger' %} bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700
+                {% elif category == 'success' %} bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700
+                {% elif category == 'warning' %} bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700
+                {% else %} bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 {% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
 
-        <h2 class="text-2xl font-bold mb-4 inline-flex items-center gap-2"><i data-lucide="truck" class="w-6 h-6"></i>Delivered Goods</h2>
+        <!-- Controls row -->
+        <div class="px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3">
 
-        <!-- Filters -->
-        <form method="GET" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 text-sm">
-            <select name="transport" class="rounded px-2 py-1 dark:bg-gray-800">
-                <option value="">All Transport</option>
-                <option value="air" {% if request.args.get('transport')=='air' %}selected{% endif %}>Air</option>
-                <option value="sea" {% if request.args.get('transport')=='sea' %}selected{% endif %}>Sea</option>
-                <option value="truck" {% if request.args.get('transport')=='truck' %}selected{% endif %}>Truck</option>
-            </select>
-            <select name="month" class="rounded px-2 py-1 dark:bg-gray-800">
-                <option value="">Month</option>
-                {% for m in range(1,13) %}
-                <option value="{{ m }}" {% if request.args.get('month')==m|string %}selected{% endif %}>{{ m }}</option>
-                {% endfor %}
-            </select>
-            <select name="year" class="rounded px-2 py-1 dark:bg-gray-800">
-                <option value="">Year</option>
-                {% for y in range(2023, 2026) %}
-                <option value="{{ y }}" {% if request.args.get('year')==y|string %}selected{% endif %}>{{ y }}</option>
-                {% endfor %}
-            </select>
-            <!-- Filter Button (same logic as above) -->
-            <form method="get" class="mb-4 flex justify-end">
-                <!-- Preserve existing filters -->
-                {% for key, value in request.args.items() %}
-                {% if key != 'page' %}
-                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            <!-- Page heading -->
+            <div class="flex items-center gap-2 mr-1 shrink-0">
+                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-500"></i>
+                <h1 class="text-base font-semibold text-gray-800 dark:text-gray-100">Delivered Goods</h1>
+            </div>
+
+            <!-- Filter form (auto-submit on change, preserves search) -->
+            <form method="GET" class="flex items-center gap-2 flex-wrap">
+                {% if request.args.get('search') %}
+                <input type="hidden" name="search" value="{{ request.args.get('search') }}">
                 {% endif %}
-                {% endfor %}
-                <button type="submit"
-                    class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
-                    <i data-lucide="filter" class="w-4 h-4"></i> Filter
-                </button>
-            </form>
-        </form>
-
-        <!-- Search & Actions Row -->
-        <div class="mb-4 flex items-center justify-between gap-2">
-            <form method="get" class="flex flex-1 items-center gap-2">
-                <!-- Preserve filters -->
-                {% for key, value in request.args.items() %}
-                {% if key != 'search' and key != 'page' %}
-                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% if request.args.get('per_page') %}
+                <input type="hidden" name="per_page" value="{{ request.args.get('per_page') }}">
                 {% endif %}
-                {% endfor %}
 
-                <input type="text" name="search" value="{{ request.args.get('search', '') }}"
-                    placeholder="Search delivered items"
-                    class="flex-1 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200" />
+                <select name="transport" onchange="this.form.submit()"
+                    class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                    <option value="">All Transport</option>
+                    <option value="air"   {% if request.args.get('transport')=='air'   %}selected{% endif %}>Air</option>
+                    <option value="sea"   {% if request.args.get('transport')=='sea'   %}selected{% endif %}>Sea</option>
+                    <option value="truck" {% if request.args.get('transport')=='truck' %}selected{% endif %}>Truck</option>
+                </select>
 
-                <button type="submit"
-                    class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
-                    <i data-lucide="search" class="w-4 h-4"></i> Search
-                </button>
+                <select name="month" onchange="this.form.submit()"
+                    class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                    <option value="">All Months</option>
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if request.args.get('month')==m|string %}selected{% endif %}>
+                        {{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1] }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <select name="year" onchange="this.form.submit()"
+                    class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400">
+                    <option value="">All Years</option>
+                    {% for y in range(2023, 2028) %}
+                    <option value="{{ y }}" {% if request.args.get('year')==y|string %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+
+                {% if request.args.get('transport') or request.args.get('month') or request.args.get('year') %}
+                <a href="{{ url_for('delivered.delivered', search=request.args.get('search',''), per_page=request.args.get('per_page','')) }}"
+                    class="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400 text-xs rounded-md transition-colors"
+                    title="Clear filters">
+                    <i data-lucide="x" class="w-3 h-3"></i> Filters
+                </a>
+                {% endif %}
             </form>
 
-            {% set clear_args = request.args.to_dict() %}
-            {% if 'search' in clear_args %}{% set _ = clear_args.pop('search') %}{% endif %}
-            {% if 'page' in clear_args %}{% set _ = clear_args.pop('page') %}{% endif %}
-
-            {% if request.args.get('search') %}
-            <a href="{{ url_for('delivered.delivered') }}?{{ clear_args|urlencode }}"
-                class="flex items-center gap-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow text-sm">
-                <i data-lucide="x-circle" class="w-4 h-4"></i> Clear
-            </a>
-            {% endif %}
-        </div>
-
-        <!-- Row Count Selector -->
-        <div class="flex justify-end mb-2">
-            <form method="get" class="flex items-center gap-2">
-                {# Preserve filters #}
+            <!-- Search form -->
+            <form method="get" class="flex items-center gap-2 flex-1 min-w-0">
                 {% for key, value in request.args.items() %}
-                {% if key != 'per_page' and key != 'page' %}
+                {% if key not in ('search', 'page') %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endif %}
                 {% endfor %}
-                <label for="per_page" class="text-sm text-gray-600 dark:text-gray-300">Rows per page:</label>
+                <div class="relative flex-1 min-w-0 max-w-sm">
+                    <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    </span>
+                    <input type="text" name="search" value="{{ request.args.get('search', '') }}"
+                        placeholder="Search delivered items&hellip;"
+                        class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                </div>
+                <button type="submit"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-md transition-colors duration-150 whitespace-nowrap">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Search</span>
+                </button>
+                {% if request.args.get('search') %}
+                {% set clear_args = request.args.to_dict() %}
+                {% if 'search' in clear_args %}{% set _ = clear_args.pop('search') %}{% endif %}
+                {% if 'page' in clear_args %}{% set _ = clear_args.pop('page') %}{% endif %}
+                <a href="{{ url_for('delivered.delivered') }}?{{ clear_args|urlencode }}"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-md transition-colors duration-150 whitespace-nowrap">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Clear</span>
+                </a>
+                {% endif %}
+            </form>
+
+            <!-- Rows per page -->
+            <form method="get" class="flex items-center gap-2 shrink-0">
+                {% for key, value in request.args.items() %}
+                {% if key not in ('per_page', 'page') %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+                {% endfor %}
+                <label for="per_page" class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Rows:</label>
                 <select name="per_page" id="per_page" onchange="this.form.submit()"
-                    class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm">
+                    class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400">
                     <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
                     <option value="20" {% if per_page==20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page==50 %}selected{% endif %}>50</option>
                 </select>
             </form>
         </div>
 
-        <!-- Delivered Items Table -->
-        {% if delivered_items %}
-        <div class="flex-1 overflow-y-auto border rounded shadow w-full">
-            <table id="delivered-table"
-                class="w-full table-auto bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-sm">
-                <thead class="sticky top-0 z-10 bg-gray-200 dark:bg-gray-800">
-                    {% set args = request.args.to_dict() %}
-                    {% set _ = args.pop('sort', None) %}
-                    {% set _ = args.pop('direction', None) %}
-                    <tr class="text-center text-xs sm:text-sm text-gray-600 dark:text-gray-300 uppercase">
-                        {% for col, label in [
-                        ('order_number', 'Order #'),
-                        ('product_name', 'Product Name'),
-                        ('quantity', 'Quantity'),
-                        ('delivery_date', 'Delivery Date'),
-                        ('transport', 'Transport')
-                        ] %}
-                        <th class="px-4 py-2">
-                            <a href="{{ url_for('delivered.delivered', sort=col, direction='asc' if sort_key != col or sort_dir == 'desc' else 'desc', **args) }}"
-                                class="flex items-center justify-center gap-1">
-                                {{ label }}
-                                {% if sort_key == col %}
-                                <span>{{ 'в†‘' if sort_dir == 'asc' else 'в†“' }}</span>
-                                {% endif %}
-                            </a>
-                        </th>
-                        {% endfor %}
-                        <th class="px-4 py-2">Source</th>
-                        <th class="px-4 py-2">Actions</th>
-                        <th class="px-4 py-2">Notes</th>
-                        <th class="px-4 py-2">POD</th>
-                    </tr>
-
-                </thead>
-                <tbody>
-                    {% for item in delivered_items %}
-                    <tr
-                        class="text-center even:bg-gray-100 dark:even:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700">
-                        <td class="px-4 py-2">{{ item.order_number }}</td>
-                        <td class="px-4 py-2">{{ item.product_name }}</td>
-                        <td class="px-4 py-2">{{ item.quantity }}</td>
-                        <td class="px-4 py-2" data-key="delivery_date" data-sort-value="{{ item.delivery_date }}">
-                            {{ item.delivery_date | format_date }}
-                        </td>
-                        <td class="px-4 py-2 text-xs">
-                            {% if item.transport == 'air' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="plane" class="w-3.5 h-3.5"></i>Air</span>
-                            {% elif item.transport == 'sea' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="ship" class="w-3.5 h-3.5"></i>Sea</span>
-                            {% elif item.transport == 'truck' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i>Truck</span>
-                            {% else %}вЂ”{% endif %}
-                        </td>
-                        <td class="px-4 py-2 text-xs">
-                            {% if item.delivery_source == 'Direct from Transit' %}
-                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">Direct from Transit</span>
-                            {% elif item.delivery_source == 'From Warehouse' %}
-                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">From Warehouse</span>
-                            {% else %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded">вЂ”</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-2">
-                            <div class="flex flex-wrap gap-2 justify-center">
-                                {% if current_user.role != 'superuser' %}
-                                <!-- Edit -->
-                                <a href="{{ url_for('delivered.edit_delivered', item_id=item.id) }}"
-                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-xs rounded min-w-[90px] flex items-center gap-1 justify-center">
-                                    <i data-lucide="pencil-line"></i> Edit
+        <!-- Table -->
+        <div class="flex-1 overflow-auto px-4 sm:px-6 pb-3">
+            <div class="rounded-md shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 w-full">
+                {% set args = request.args.to_dict() %}
+                {% set _ = args.pop('sort', None) %}
+                {% set _ = args.pop('direction', None) %}
+                <table id="delivered-table" class="min-w-max w-full bg-gray-100 dark:bg-gray-900 text-sm">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-slate-800 dark:bg-slate-900 text-slate-300 text-[10px] tracking-wider uppercase select-none">
+                            {% for col, label in [
+                                ('order_number',  'Order #'),
+                                ('product_name',  'Product'),
+                                ('quantity',      'Qty'),
+                                ('delivery_date', 'Delivery Date'),
+                                ('transport',     'Transport')
+                            ] %}
+                            <th class="px-3 py-2 text-center whitespace-nowrap {% if sort_key == col %}th-sort-active{% else %}th-sortable{% endif %}">
+                                <a href="{{ url_for('delivered.delivered', sort=col, direction='asc' if sort_key != col or sort_dir == 'desc' else 'desc', **args) }}"
+                                    class="flex items-center justify-center gap-1 w-full h-full">
+                                    {{ label }}
+                                    {% if sort_key == col %}
+                                    <span class="sort-indicator">{{ '↑' if sort_dir == 'asc' else '↓' }}</span>
+                                    {% endif %}
                                 </a>
+                            </th>
+                            {% endfor %}
+                            <th class="px-3 py-2 text-center whitespace-nowrap text-slate-400">Source</th>
+                            <th class="px-3 py-2 text-center whitespace-nowrap text-slate-400">Actions</th>
+                            <th class="px-3 py-2 text-center whitespace-nowrap text-slate-400">Notes</th>
+                            <th class="px-3 py-2 text-center whitespace-nowrap text-slate-400">POD</th>
+                        </tr>
+                    </thead>
 
-                                <!-- Restore -->
-                                <button class="text-sm text-green-600 hover:underline restore-btn"
-                                    data-item-id="{{ item.id }}">
-                                    Restore
-                                </button>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for item in delivered_items %}
+                        <tr class="bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-100">
+
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                                {{ item.order_number }}
+                            </td>
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                                {{ item.product_name }}
+                            </td>
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap text-center">
+                                {{ item.quantity }}
+                            </td>
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap text-center">
+                                {{ item.delivery_date | format_date }}
+                            </td>
+
+                            <!-- Transport icon -->
+                            <td class="px-3 py-1.5 text-center text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {% if item.transport == 'air' %}
+                                <i data-lucide="plane" class="w-4 h-4 inline-block" title="Air"></i>
+                                {% elif item.transport == 'sea' %}
+                                <i data-lucide="ship" class="w-4 h-4 inline-block" title="Sea"></i>
+                                {% elif item.transport == 'truck' %}
+                                <i data-lucide="truck" class="w-4 h-4 inline-block" title="Truck"></i>
+                                {% else %}&mdash;{% endif %}
+                            </td>
+
+                            <!-- Source badge -->
+                            <td class="px-3 py-1.5 text-center whitespace-nowrap">
+                                {% if item.delivery_source == 'Direct from Transit' %}
+                                <span style="background:rgba(59,130,246,0.12);color:#1d4ed8;border:1px solid rgba(59,130,246,0.35);display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;letter-spacing:0.04em;white-space:nowrap">
+                                    Direct
+                                </span>
+                                {% elif item.delivery_source == 'From Warehouse' %}
+                                <span style="background:rgba(139,92,246,0.12);color:#6d28d9;border:1px solid rgba(139,92,246,0.35);display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;letter-spacing:0.04em;white-space:nowrap">
+                                    Warehouse
+                                </span>
+                                {% else %}
+                                <span class="text-gray-400 text-xs">&mdash;</span>
                                 {% endif %}
+                            </td>
 
-                                {% if item.delivery_source == 'From Warehouse' and item.order_number in
-                                reported_order_numbers %}
-                                <!-- View Report -->
-                                <button data-order-number="{{ item.order_number }}"
-                                    class="open-stockreport-modal bg-purple-800 hover:bg-purple-900 text-white px-3 py-1 text-xs rounded min-w-[90px] flex items-center gap-1 justify-center">
-                                    <i data-lucide="file-text"></i> View Report
-                                </button>
+                            <!-- Actions -->
+                            <td class="px-3 py-1.5 text-center">
+                                <div class="flex items-center justify-center gap-0.5">
+                                    {% if current_user.role != 'superuser' %}
+
+                                    <!-- Edit -->
+                                    <a href="{{ url_for('delivered.edit_delivered', item_id=item.id) }}"
+                                        class="action-icon-btn hover:text-blue-400 hover:bg-blue-400/10"
+                                        title="Edit">
+                                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                    </a>
+
+                                    <!-- Restore to Dashboard -->
+                                    <button class="restore-btn action-icon-btn hover:text-emerald-400 hover:bg-emerald-400/10"
+                                        data-item-id="{{ item.id }}"
+                                        title="Restore to Dashboard">
+                                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                    </button>
+
+                                    {% endif %}
+
+                                    <!-- View Stock Report -->
+                                    {% if item.delivery_source == 'From Warehouse' and item.order_number in reported_order_numbers %}
+                                    <button data-order-number="{{ item.order_number }}"
+                                        class="open-stockreport-modal action-icon-btn hover:text-violet-400 hover:bg-violet-400/10"
+                                        title="View Stock Report">
+                                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Notes -->
+                            <td class="px-3 py-1.5 text-center whitespace-nowrap">
+                                {% if item.notes %}
+                                <span title="{{ item.notes }}"
+                                    class="inline-block max-w-[160px] overflow-hidden text-ellipsis align-middle px-2 py-0.5 rounded text-[10px] font-medium"
+                                    style="background:rgba(148,163,184,0.12);color:#64748b;border:1px solid rgba(148,163,184,0.3)">
+                                    {{ item.notes[:32] }}{% if item.notes|length > 32 %}&hellip;{% endif %}
+                                </span>
+                                {% else %}
+                                <span class="text-gray-400 text-xs">&mdash;</span>
                                 {% endif %}
-                            </div>
-                        </td>
+                            </td>
 
-                        <td class="px-4 py-2">
-                            {% if item.notes %}
-                            <span title="{{ item.notes }}"
-                                class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded whitespace-nowrap max-w-[150px] overflow-hidden text-ellipsis inline-block">
-                                {{ item.notes[:30] }}{% if item.notes|length > 30 %}...{% endif %}
-                            </span>
-                            {% else %}вЂ”{% endif %}
-                        </td>
+                            <!-- POD -->
+                            <td class="px-3 py-1.5 text-center whitespace-nowrap">
+                                {% if current_user.role != 'superuser' %}
+                                <div class="flex items-center justify-center gap-0.5">
+                                    {% if item.pod_filename %}
+                                    <a href="{{ url_for('upload.view_pod', filename=item.pod_filename) }}" target="_blank"
+                                        class="action-icon-btn hover:text-blue-400 hover:bg-blue-400/10"
+                                        title="View POD">
+                                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('upload.delete_pod', item_id=item.id) }}" style="display:contents">
+                                        <button type="submit"
+                                            class="action-icon-btn hover:text-red-400 hover:bg-red-400/10"
+                                            title="Delete POD"
+                                            onclick="return confirm('Delete this POD document?')">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <form method="POST" action="{{ url_for('upload.upload_pod', item_id=item.id) }}"
+                                        enctype="multipart/form-data" style="display:contents">
+                                        <label for="pod-{{ item.id }}"
+                                            class="action-icon-btn hover:text-emerald-400 hover:bg-emerald-400/10 cursor-pointer"
+                                            title="Upload POD">
+                                            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                        </label>
+                                        <input id="pod-{{ item.id }}" name="file" type="file" accept=".pdf"
+                                            class="hidden" onchange="this.form.submit()">
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-gray-400 text-xs">&mdash;</span>
+                                {% endif %}
+                            </td>
 
-                        <td class="px-4 py-2 text-xs text-center">
-                            {% if current_user.role != 'superuser' %}
-                            {% if item.pod_filename %}
-                            <div class="flex items-center justify-center space-x-2">
-                                <a href="{{ url_for('upload.view_pod', filename=item.pod_filename) }}" target="_blank"
-                                    class="text-blue-600 hover:underline"><i data-lucide="paperclip" class="w-4 h-4 inline"></i> View</a>
-                                <form method="POST" action="{{ url_for('upload.delete_pod', item_id=item.id) }}">
-                                    <button type="submit" class="text-red-500 hover:underline"
-                                        title="Delete POD"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
-                                </form>
-                            </div>
-                            {% else %}
-                            <form method="POST" action="{{ url_for('upload.upload_pod', item_id=item.id) }}"
-                                enctype="multipart/form-data" class="flex flex-col items-center space-y-1">
-                                <label for="pod-{{ item.id }}"
-                                    class="cursor-pointer text-blue-600 text-sm hover:underline relative inline-flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i>Upload...</label>
-                                <input id="pod-{{ item.id }}" name="file" type="file" accept=".pdf" class="hidden"
-                                    onchange="this.form.submit()">
-                            </form>
-                            {% endif %}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-
-            </table>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                                No delivered items found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        {% set args = request.args.to_dict() if request.args else {} %}
-        {% set filtered_args = args.copy() %}
-        {% if 'page' in filtered_args %}{% set _ = filtered_args.pop('page') %}{% endif %}
-        {% if 'per_page' in filtered_args %}{% set _ = filtered_args.pop('per_page') %}{% endif %}
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        {% set page_args = request.args.to_dict() %}
+        {% if 'page' in page_args %}{% set _ = page_args.pop('page') %}{% endif %}
+        {% if 'per_page' in page_args %}{% set _ = page_args.pop('per_page') %}{% endif %}
 
-        <div class="mt-4 flex justify-between items-center">
-            <div class="text-sm text-gray-600 dark:text-gray-300">
-                Showing page {{ pagination.page }} of {{ pagination.pages }}
-            </div>
-            <div class="flex gap-2">
+        <div class="px-4 sm:px-6 py-3 flex items-center justify-between">
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </span>
+            <div class="flex items-center gap-2">
                 {% if pagination.has_prev %}
-                <a href="{{ url_for('delivered.delivered', page=pagination.prev_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">в¬… Prev</a>
+                <a href="{{ url_for('delivered.delivered', page=pagination.prev_num, per_page=per_page, **page_args) }}"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md transition-colors">
+                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> Prev
+                </a>
                 {% endif %}
                 {% if pagination.has_next %}
-                <a href="{{ url_for('delivered.delivered', page=pagination.next_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">Next вћЎ</a>
+                <a href="{{ url_for('delivered.delivered', page=pagination.next_num, per_page=per_page, **page_args) }}"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md transition-colors">
+                    Next <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </a>
                 {% endif %}
             </div>
-        </div>
-
         </div>
         {% endif %}
 
-        <!-- Single Stockreport Modal Block (do NOT duplicate) -->
-        <div id="stockreport-modal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-60 overflow-y-auto">
-            <div class="min-h-screen w-full bg-white dark:bg-gray-900 p-6">
-                <button onclick="closeModal()"
-                    class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-200 transition duration-150 z-50"
-                    title="Close Report">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white hover:text-black" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <div id="stockreport-modal-content"></div>
-            </div>
-        </div>
     </main>
 
-    <!-- Dark Mode Toggle -->
-    <script>
-        const toggle = document.getElementById('dark-mode-toggle');
-        if (toggle && localStorage.getItem('dark-mode') === 'enabled') {
-            document.documentElement.classList.add('dark');
-        }
-        if (toggle) {
-            toggle.addEventListener('click', () => {
-                document.documentElement.classList.toggle('dark');
-                localStorage.setItem('dark-mode', document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
-            });
-        }
-    </script>
+    <!-- Stockreport Modal -->
+    <div id="stockreport-modal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
+        <div class="min-h-screen w-full bg-white dark:bg-gray-900 p-6">
+            <button onclick="closeModal()"
+                class="absolute top-4 right-4 action-icon-btn hover:text-red-400 hover:bg-red-400/10 w-9 h-9"
+                title="Close Report">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="stockreport-modal-content"></div>
+        </div>
+    </div>
 
-    <!-- View Report Modal Logic (clean, deduplicated) -->
     <script>
+        lucide.createIcons();
+
         function closeModal() {
             const modal = document.getElementById('stockreport-modal');
             const content = document.getElementById('stockreport-modal-content');
-            modal.classList.remove('flex');
             modal.classList.add('hidden');
+            modal.classList.remove('flex');
             content.innerHTML = '';
-            document.body.classList.remove('overflow-hidden');
             document.body.style.overflow = '';
-            document.body.style.height = '';
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.open-stockreport-modal').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const orderNumber = button.dataset.orderNumber;
-                    const modal = document.getElementById('stockreport-modal');
-                    const content = document.getElementById('stockreport-modal-content');
-
-                    try {
-                        // Show modal and lock scroll
-                        document.body.classList.add('overflow-hidden');
-                        document.body.style.overflow = 'hidden';
-                        document.body.style.height = '100vh';
-                        modal.classList.remove('hidden');
-                        modal.classList.add('flex');
-
-                        // Load stockreport HTML content
-                        const response = await fetch(`/stockreport/view_by_order/${orderNumber}`);
-                        const html = await response.text();
-                        content.innerHTML = html;
-
-                        // Load supporting script once
-                        if (!document.querySelector('script[data-id="view-stockreport"]')) {
-                            const script = document.createElement('script');
-                            script.src = '/static/js/view_stockreport.js';
-                            script.setAttribute('data-id', 'view-stockreport');
-                            script.onload = () => console.log("вњ… view_stockreport.js loaded");
-                            document.body.appendChild(script);
-                        }
-                    } catch (err) {
-                        console.error("вќЊ Failed to load report:", err);
-                        alert("Failed to open stockreport modal.");
-                        closeModal();
+        // Stockreport modal buttons
+        document.querySelectorAll('.open-stockreport-modal').forEach(button => {
+            button.addEventListener('click', async () => {
+                const orderNumber = button.dataset.orderNumber;
+                const modal = document.getElementById('stockreport-modal');
+                const content = document.getElementById('stockreport-modal-content');
+                try {
+                    document.body.style.overflow = 'hidden';
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    const response = await fetch(`/stockreport/view_by_order/${orderNumber}`);
+                    const html = await response.text();
+                    content.innerHTML = html;
+                    if (!document.querySelector('script[data-id="view-stockreport"]')) {
+                        const script = document.createElement('script');
+                        script.src = '/static/js/view_stockreport.js';
+                        script.setAttribute('data-id', 'view-stockreport');
+                        document.body.appendChild(script);
                     }
-                });
+                } catch (err) {
+                    console.error('Failed to load report:', err);
+                    alert('Failed to open stockreport.');
+                    closeModal();
+                }
+            });
+        });
+
+        // Restore to Dashboard buttons
+        document.querySelectorAll('.restore-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const itemId = btn.dataset.itemId;
+                if (!confirm('Restore this order to the Dashboard?')) return;
+                try {
+                    const response = await fetch(`/restore_from_delivered?item_id=${itemId}`, { method: 'POST' });
+                    if (response.ok) {
+                        btn.closest('tr').remove();
+                    } else {
+                        alert('Failed to restore order.');
+                    }
+                } catch (error) {
+                    console.error('Restore error:', error);
+                    alert('An error occurred while restoring the order.');
+                }
             });
         });
     </script>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const restoreButtons = document.querySelectorAll(".restore-btn");
-
-            restoreButtons.forEach(btn => {
-                btn.addEventListener("click", async () => {
-                    const itemId = btn.dataset.itemId;
-
-                    const confirmed = confirm("Restore this order to Dashboard?");
-                    if (!confirmed) return;
-
-                    try {
-                        const response = await fetch(`/restore_from_delivered?item_id=${itemId}`, {
-                            method: "POST"
-                        });
-
-                        if (response.ok) {
-                            btn.closest("tr").remove();  // remove row from table
-                            alert("вњ… Order restored to Dashboard.");
-                        } else {
-                            alert("вќЊ Failed to restore order.");
-                        }
-                    } catch (error) {
-                        console.error("Restore error:", error);
-                        alert("вљ пёЏ An error occurred while restoring the order.");
-                    }
-                });
-            });
-        });
-    </script>
-
-
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>lucide.createIcons();</script>
 </body>
 
 </html>
