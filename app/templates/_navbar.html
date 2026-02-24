@@ -56,7 +56,8 @@
     <button
       class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-md shadow-sm transition-colors duration-150 toggle-form-btn"
       title="Add a new incoming order">
-      <i data-lucide="plus" class="w-4 h-4 flex-shrink-0"></i>
+      <i data-lucide="plus" class="w-4 h-4 flex-shrink-0 btn-icon-open"></i>
+      <i data-lucide="x" class="w-4 h-4 flex-shrink-0 btn-icon-close hidden"></i>
       <span class="hidden sm:inline">New Order</span>
     </button>
     {% elif current_path.startswith(url_for('warehouse.warehouse')) %}
