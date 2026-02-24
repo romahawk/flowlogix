@@ -1,442 +1,397 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>Warehouse Stock</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowLogix &mdash; Warehouse</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+        (function () {
+            if (localStorage.getItem('dark-mode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 </head>
 
-<body class="flex flex-col h-screen bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-100">
+<body class="flex flex-col min-h-screen m-0 p-0 bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
     {% include '_navbar.html' %}
 
-    <!-- Manual Order Form -->
-    <form method="POST" action="{{ url_for('warehouse.add_warehouse_manual') }}" id="manual-order-form"
-        class="hidden bg-white dark:bg-gray-800 rounded p-4 mb-6 shadow space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" name="order_number" placeholder="Order #" required
-                class="p-2 rounded border dark:bg-gray-700">
-            <input type="text" name="product_name" placeholder="Product Name" required
-                class="p-2 rounded border dark:bg-gray-700">
-            <input type="number" name="quantity" step="0.01" placeholder="Quantity" required
-                class="p-2 rounded border dark:bg-gray-700">
-            <input type="date" name="ata" required class="p-2 rounded border dark:bg-gray-700">
-            <select name="transport" required class="p-2 rounded border dark:bg-gray-700">
-                <option value="">Select Transport</option>
-                <option value="sea">Ship</option>
-                <option value="air">Plane</option>
-                <option value="truck">Truck</option>
-            </select>
-            <input type="text" name="notes" placeholder="Notes (optional)" class="p-2 rounded border dark:bg-gray-700">
+    <!-- Manual Order Form (Collapsible, toggled from navbar) -->
+    <div id="manual-order-form" class="hidden border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-5">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="package-plus" class="w-5 h-5 text-emerald-500"></i>
+                    <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100">Add Manual Stock Entry</h2>
+                </div>
+            </div>
+            <form method="POST" action="{{ url_for('warehouse.add_warehouse_manual') }}"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-3">
+                <div class="form-group">
+                    <label class="form-label">Order # <span class="req-star">*</span></label>
+                    <input type="text" name="order_number" placeholder="e.g. PO-2026-001" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Product Name <span class="req-star">*</span></label>
+                    <input type="text" name="product_name" placeholder="Product name" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity <span class="req-star">*</span></label>
+                    <input type="number" name="quantity" step="0.01" placeholder="0" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ATA <span class="req-star">*</span></label>
+                    <input type="date" name="ata" required class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Transport <span class="req-star">*</span></label>
+                    <select name="transport" required class="form-input">
+                        <option value="" disabled selected>Select transport</option>
+                        <option value="sea">Sea</option>
+                        <option value="air">Air</option>
+                        <option value="truck">Truck</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <input type="text" name="notes" placeholder="Optional notes" class="form-input">
+                </div>
+                <div class="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-gray-700 mt-1">
+                    <button type="submit"
+                        class="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-md shadow-sm transition-colors duration-150">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Save Entry</span>
+                    </button>
+                </div>
+            </form>
         </div>
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded inline-flex items-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i>Save Manual Order</button>
-    </form>
+    </div>
 
-    <main class="flex flex-col h-full overflow-hidden p-4">
+    <main class="flex flex-col flex-1 overflow-hidden">
+
+        <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-        <div class="bg-green-100 border px-4 py-2 rounded my-2 text-green-800">{{ message }}</div>
-        {% endfor %}
+        {% if messages %}
+        <div class="px-4 sm:px-6 pt-3">
+            {% for category, message in messages %}
+            <div class="border px-4 py-2 rounded-md mb-2 text-sm
+                {% if category == 'danger' %} bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-700
+                {% elif category == 'success' %} bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-700
+                {% elif category == 'warning' %} bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700
+                {% else %} bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 {% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
 
-        <h2 class="text-2xl font-bold mb-4 inline-flex items-center gap-2"><i data-lucide="package" class="w-6 h-6"></i>Warehouse Stock</h2>
+        <!-- Controls row -->
+        <div class="px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3">
 
-        <!-- Search & Clear -->
-        <div class="mb-4 flex items-center justify-between gap-2">
-            <form method="get" class="flex flex-1 items-center gap-2">
+            <!-- Page heading -->
+            <div class="flex items-center gap-2 mr-2">
+                <i data-lucide="warehouse" class="w-5 h-5 text-slate-500 dark:text-slate-400"></i>
+                <h1 class="text-base font-semibold text-gray-800 dark:text-gray-100">Warehouse Stock</h1>
+            </div>
+
+            <!-- Search form -->
+            <form method="get" class="flex items-center gap-2 flex-1 min-w-0">
                 {% for key, value in request.args.items() %}
                 {% if key != 'search' and key != 'page' %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endif %}
                 {% endfor %}
-
-                <input type="text" name="search" value="{{ request.args.get('search', '') }}"
-                    placeholder="Search warehouse stock"
-                    class="flex-1 p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200" />
-
+                <div class="relative flex-1 min-w-0 max-w-sm">
+                    <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    </span>
+                    <input type="text" name="search" value="{{ request.args.get('search', '') }}"
+                        placeholder="Search warehouse stock&hellip;"
+                        class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                </div>
                 <button type="submit"
-                    class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm">
-                    <i data-lucide="search" class="w-4 h-4"></i> Search
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded-md transition-colors duration-150 whitespace-nowrap">
+                    <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Search</span>
                 </button>
+                {% if request.args.get('search') %}
+                {% set clear_args = request.args.to_dict() %}
+                {% if 'search' in clear_args %}{% set _ = clear_args.pop('search') %}{% endif %}
+                {% if 'page' in clear_args %}{% set _ = clear_args.pop('page') %}{% endif %}
+                <a href="{{ url_for('warehouse.warehouse') }}?{{ clear_args|urlencode }}"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-xs font-semibold rounded-md transition-colors duration-150 whitespace-nowrap">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">Clear</span>
+                </a>
+                {% endif %}
             </form>
 
-            {% set clear_args = request.args.to_dict() %}
-            {% if 'search' in clear_args %}{% set _ = clear_args.pop('search') %}{% endif %}
-            {% if 'page' in clear_args %}{% set _ = clear_args.pop('page') %}{% endif %}
-
-            {% if request.args.get('search') %}
-            <a href="{{ url_for('warehouse.warehouse') }}?{{ clear_args|urlencode }}"
-                class="flex items-center gap-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded shadow text-sm">
-                <i data-lucide="x-circle" class="w-4 h-4"></i> Clear
-            </a>
-            {% endif %}
-        </div>
-
-        <!-- Row Count Selector -->
-        <div class="flex justify-end mb-2">
-            <form method="get" class="flex items-center gap-2">
+            <!-- Rows per page -->
+            <form method="get" class="flex items-center gap-2 shrink-0">
                 {% for key, value in request.args.items() %}
                 {% if key != 'per_page' and key != 'page' %}
                 <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endif %}
                 {% endfor %}
-                <label for="per_page" class="text-sm text-gray-600 dark:text-gray-300">Rows per page:</label>
+                <label for="per_page" class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Rows:</label>
                 <select name="per_page" id="per_page" onchange="this.form.submit()"
-                    class="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm">
+                    class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-400">
                     <option value="10" {% if per_page==10 %}selected{% endif %}>10</option>
                     <option value="20" {% if per_page==20 %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page==50 %}selected{% endif %}>50</option>
                 </select>
             </form>
         </div>
 
-        <!-- Order table -->
-        <div class="orders-table-container flex-grow overflow-auto border rounded shadow w-full">
-            <table id="warehouse-table"
-                class="w-full table-auto bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-sm">
-                <thead class="sticky top-0 z-10 bg-gray-200 dark:bg-gray-800">
-                    {% set args = request.args.to_dict() %}
-                    {% set _ = args.pop('sort', None) %}
-                    {% set _ = args.pop('direction', None) %}
-                    <tr
-                        class="bg-gray-200 dark:bg-gray-700 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-300 uppercase">
+        <!-- Table -->
+        <div class="flex-1 overflow-auto px-4 sm:px-6 pb-3">
+            <div class="rounded-md shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700 w-full">
+                {% set args = request.args.to_dict() %}
+                {% set _ = args.pop('sort', None) %}
+                {% set _ = args.pop('direction', None) %}
+                <table id="warehouse-table" class="min-w-max w-full bg-gray-100 dark:bg-gray-900 text-sm">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-slate-800 dark:bg-slate-900 text-slate-300 text-[10px] tracking-wider uppercase select-none">
+                            {% for col, label in [
+                                ('order_number', 'Order #'),
+                                ('product_name', 'Product'),
+                                ('quantity', 'Qty'),
+                                ('ata', 'ATA'),
+                                ('transport', 'Transport')
+                            ] %}
+                            <th class="px-3 py-2 text-center whitespace-nowrap {% if sort_key == col %}th-sort-active{% else %}th-sortable{% endif %}">
+                                <a href="{{ url_for('warehouse.warehouse', sort=col, direction='asc' if sort_key != col or sort_dir == 'desc' else 'desc', **args) }}"
+                                    class="flex items-center justify-center gap-1 w-full h-full">
+                                    {{ label }}
+                                    {% if sort_key == col %}
+                                    <span class="sort-indicator">{{ '↑' if sort_dir == 'asc' else '↓' }}</span>
+                                    {% endif %}
+                                </a>
+                            </th>
+                            {% endfor %}
+                            <th class="px-3 py-2 text-center whitespace-nowrap text-slate-400">Status</th>
+                            <th class="px-3 py-2 text-center whitespace-nowrap text-slate-400">Actions</th>
+                            <th class="px-3 py-2 text-center whitespace-nowrap text-slate-400">Notes</th>
+                        </tr>
+                    </thead>
 
-                        {% for col, label in [
-                        ('order_number', 'Order #'),
-                        ('product_name', 'Product Name'),
-                        ('quantity', 'Quantity'),
-                        ('ata', 'ATA'),
-                        ('transport', 'Transport')
-                        ] %}
-                        <th class="px-4 py-2">
-                            <a href="{{ url_for('warehouse.warehouse', sort=col, direction='asc' if sort_key != col or sort_dir == 'desc' else 'desc', **args) }}"
-                                class="flex items-center justify-center gap-1">
-                                {{ label }}
-                                {% if sort_key == col %}
-                                <span>{{ 'в†‘' if sort_dir == 'asc' else 'в†“' }}</span>
-                                {% endif %}
-                            </a>
-                        </th>
-                        {% endfor %}
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for item in warehouse_items %}
+                        <tr class="bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-100">
 
-                        <th class="px-4 py-2">Status</th>
-                        <th class="px-4 py-2">Actions</th>
-                        <th class="px-4 py-2">Notes</th>
-                    </tr>
-                </thead>
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                                {{ item.order_number }}
+                            </td>
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                                {{ item.product_name }}
+                            </td>
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap text-center">
+                                {{ item.quantity }}
+                            </td>
+                            <td class="px-3 py-1.5 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap text-center">
+                                {% if item.ata and item.ata.__class__.__name__ == 'date' %}
+                                {{ item.ata.strftime('%d.%m.%y') }}
+                                {% elif item.ata %}
+                                {{ item.ata }}
+                                {% else %}&mdash;{% endif %}
+                            </td>
+                            <td class="px-3 py-1.5 text-center text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {% if item.transport == 'air' %}
+                                <i data-lucide="plane" class="w-4 h-4 inline-block" title="Air"></i>
+                                {% elif item.transport == 'sea' %}
+                                <i data-lucide="ship" class="w-4 h-4 inline-block" title="Sea"></i>
+                                {% elif item.transport == 'truck' %}
+                                <i data-lucide="truck" class="w-4 h-4 inline-block" title="Truck"></i>
+                                {% else %}&mdash;{% endif %}
+                            </td>
 
-                <tbody>
-                    {% for item in warehouse_items %}
-                    <tr
-                        class="text-center even:bg-gray-100 dark:even:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700">
-                        <td class="px-4 py-2">{{ item.order_number }}</td>
-                        <td class="px-4 py-2">{{ item.product_name }}</td>
-                        <td class="px-4 py-2">{{ item.quantity }}</td>
-                        <td class="px-4 py-2">
-                            {% if item.ata and item.ata.__class__.__name__ == 'date' %}
-                            {{ item.ata.strftime('%d-%m-%y') }}
-                            {% elif item.ata %}
-                            {{ item.ata }}
-                            {% else %}
-                            вЂ”
-                            {% endif %}
-                        </td>
+                            <!-- Status -->
+                            <td class="px-3 py-1.5 text-center whitespace-nowrap">
+                                <span style="background:rgba(56,200,100,0.13);color:#166534;border:1px solid rgba(56,200,100,0.4);display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap">
+                                    In Stock
+                                </span>
+                            </td>
 
+                            <!-- Actions -->
+                            <td class="px-3 py-1.5 text-center">
+                                <div class="flex items-center justify-center gap-0.5">
 
-                        <td class="px-4 py-2 text-xs">
-                            {% if item.transport == 'air' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="plane" class="w-3.5 h-3.5"></i>Air</span>
-                            {% elif item.transport == 'sea' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="ship" class="w-3.5 h-3.5"></i>Sea</span>
-                            {% elif item.transport == 'truck' %}
-                            <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded inline-flex items-center gap-1"><i data-lucide="truck" class="w-3.5 h-3.5"></i>Truck</span>
-                            {% else %}
-                            вЂ”
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-2"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">In
-                                Stock</span>
-                        </td>
-                        <td class="px-4 py-2">
-                            <div class="flex justify-end">
-                                <div class="flex items-center gap-2 min-w-[500px] ml-4">
-
-                                    <!-- Qty + Deliver -->
+                                    <!-- Deliver (qty + icon btn) -->
                                     <form method="POST"
                                         action="{{ url_for('warehouse.deliver_partial', item_id=item.id) }}"
-                                        class="flex items-center gap-2">
+                                        style="display:contents">
                                         <input type="number" name="quantity" min="1" max="{{ item.quantity }}"
                                             placeholder="Qty"
-                                            class="w-20 px-2 py-1 rounded text-sm bg-white text-black dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            class="w-14 px-1.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400"
                                             required>
                                         <button type="submit"
-                                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 text-xs rounded min-w-[90px] flex items-center gap-1 justify-center">
-                                            <i data-lucide="truck"></i> Deliver
+                                            class="action-icon-btn hover:text-emerald-400 hover:bg-emerald-400/10"
+                                            title="Deliver">
+                                            <i data-lucide="truck" class="w-3.5 h-3.5"></i>
                                         </button>
                                     </form>
 
                                     <!-- Edit -->
                                     <a href="{{ url_for('warehouse.edit_warehouse', item_id=item.id) }}"
-                                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-xs rounded min-w-[90px] flex items-center gap-1 justify-center">
-                                        <i data-lucide="pencil-line"></i> Edit
+                                        class="action-icon-btn hover:text-blue-400 hover:bg-blue-400/10"
+                                        title="Edit">
+                                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                                     </a>
 
-                                    <!-- Stockreport / View Report -->
+                                    <!-- Stockreport -->
                                     {% if item.id in reported_ids %}
                                     <button data-item-id="{{ item.id }}"
-                                        class="open-stockreport-modal bg-purple-800 hover:bg-purple-900 text-white px-3 py-1 text-xs rounded flex items-center gap-1 justify-center">
-                                        <i data-lucide="file-text"></i> View Report
+                                        class="open-stockreport-modal action-icon-btn hover:text-violet-400 hover:bg-violet-400/10"
+                                        title="View Stock Report">
+                                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
                                     </button>
                                     {% else %}
                                     <a href="{{ url_for('warehouse.stockreport_entry_form', item_id=item.id) }}"
-                                        class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 text-xs rounded flex items-center gap-1 justify-center">
-                                        <i data-lucide="file-plus"></i> Stockreport
+                                        class="action-icon-btn hover:text-violet-400 hover:bg-violet-400/10"
+                                        title="Create Stock Report">
+                                        <i data-lucide="file-plus" class="w-3.5 h-3.5"></i>
                                     </a>
                                     {% endif %}
 
                                     <!-- Delete -->
                                     <form method="POST"
                                         action="{{ url_for('warehouse.delete_warehouse', item_id=item.id) }}"
-                                        onsubmit="return confirm('Delete this warehouse item?')" class="inline">
+                                        onsubmit="return confirm('Delete this warehouse item?')"
+                                        style="display:contents">
                                         <button type="submit"
-                                            class="bg-red-700 hover:bg-red-800 text-white px-3 py-1 text-xs rounded min-w-[90px] flex items-center gap-1 justify-center">
-                                            <i data-lucide="trash-2"></i> Delete
+                                            class="action-icon-btn hover:text-red-400 hover:bg-red-400/10"
+                                            title="Delete">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                         </button>
                                     </form>
 
-
                                 </div>
-                            </div>
-                        </td>
+                            </td>
 
+                            <!-- Notes -->
+                            <td class="px-3 py-1.5 text-center whitespace-nowrap">
+                                {% if item.notes %}
+                                <span title="{{ item.notes }}"
+                                    class="inline-block max-w-[160px] overflow-hidden text-ellipsis align-middle px-2 py-0.5 rounded text-[10px] font-medium"
+                                    style="background:rgba(148,163,184,0.12);color:#64748b;border:1px solid rgba(148,163,184,0.3)">
+                                    {{ item.notes[:32] }}{% if item.notes|length > 32 %}&hellip;{% endif %}
+                                </span>
+                                {% else %}
+                                <span class="text-gray-400 text-xs">&mdash;</span>
+                                {% endif %}
+                            </td>
 
-                        <td class="px-4 py-2">
-                            {% if item.notes %}
-                            <span title="{{ item.notes }}"
-                                class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded whitespace-nowrap max-w-[150px] overflow-hidden text-ellipsis inline-block">
-                                {{ item.notes[:30] }}{% if item.notes|length > 30 %}...{% endif %}
-                            </span>
-                            {% else %}
-                            вЂ”
-                            {% endif %}
-                        </td>
-
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                                No warehouse items found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- Pagination Controls -->
-        {% set args = request.args.to_dict() if request.args else {} %}
-        {% set filtered_args = args.copy() %}
-        {% if 'page' in filtered_args %}{% set _ = filtered_args.pop('page') %}{% endif %}
-        {% if 'per_page' in filtered_args %}{% set _ = filtered_args.pop('per_page') %}{% endif %}
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        {% set page_args = request.args.to_dict() %}
+        {% if 'page' in page_args %}{% set _ = page_args.pop('page') %}{% endif %}
+        {% if 'per_page' in page_args %}{% set _ = page_args.pop('per_page') %}{% endif %}
 
-        <div class="mt-4 flex justify-between items-center">
-            <div class="text-sm text-gray-600 dark:text-gray-300">
-                Showing page {{ pagination.page }} of {{ pagination.pages }}
-            </div>
-            <div class="flex gap-2">
+        <div class="px-4 sm:px-6 py-3 flex items-center justify-between">
+            <span class="text-xs text-gray-500 dark:text-gray-400">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </span>
+            <div class="flex items-center gap-2">
                 {% if pagination.has_prev %}
-                <a href="{{ url_for('warehouse.warehouse', page=pagination.prev_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">в¬… Prev</a>
+                <a href="{{ url_for('warehouse.warehouse', page=pagination.prev_num, per_page=per_page, **page_args) }}"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md transition-colors">
+                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> Prev
+                </a>
                 {% endif %}
                 {% if pagination.has_next %}
-                <a href="{{ url_for('warehouse.warehouse', page=pagination.next_num, per_page=per_page, **filtered_args) }}"
-                    class="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 text-sm">Next вћЎ</a>
+                <a href="{{ url_for('warehouse.warehouse', page=pagination.next_num, per_page=per_page, **page_args) }}"
+                    class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md transition-colors">
+                    Next <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                </a>
                 {% endif %}
             </div>
         </div>
+        {% endif %}
+
     </main>
 
-    <!-- <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchWarehouse = document.getElementById('search-warehouse');
+    <!-- Stockreport Modal -->
+    <div id="stockreport-modal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
+        <div class="min-h-screen w-full bg-white dark:bg-gray-900 p-6">
+            <button onclick="closeModal()"
+                class="absolute top-4 right-4 action-icon-btn hover:text-red-400 hover:bg-red-400/10 w-9 h-9"
+                title="Close Report">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="stockreport-modal-content"></div>
+        </div>
+    </div>
 
-            searchWarehouse.addEventListener('input', () => {
-                const term = searchWarehouse.value.toLowerCase();
-                const rows = document.querySelectorAll('#warehouse-table tbody tr');
-                rows.forEach(row => {
-                    const rowText = row.textContent.toLowerCase();
-                    row.style.display = rowText.includes(term) ? '' : 'none';
-                });
-            });
-
-            const headers = document.querySelectorAll('th[data-sort]');
-            let currentSort = { key: '', direction: '' };
-
-            headers.forEach(header => {
-                header.addEventListener('click', () => {
-                    const key = header.getAttribute('data-sort');
-                    const ascending = currentSort.key === key && currentSort.direction === 'asc' ? false : true;
-                    currentSort = { key, direction: ascending ? 'asc' : 'desc' };
-
-                    // sortTableByKey(key, ascending);
-                    // updateSortIndicators();
-                });
-            });
-
-            // function sortTableByKey(key, ascending) {
-            //     const cellMap = {
-            //         order_number: 0,
-            //         product_name: 1,
-            //         quantity: 2,
-            //         ata: 3,
-            //         transport: 4
-            //     };
-
-            //     const rows = Array.from(document.querySelectorAll('#warehouse-table tbody tr'));
-            //     const sortedRows = rows.sort((a, b) => {
-            //         let valA = a.cells[cellMap[key]].innerText.trim().toLowerCase();
-            //         let valB = b.cells[cellMap[key]].innerText.trim().toLowerCase();
-
-            //         if (key === "quantity") {
-            //             return ascending ? parseFloat(valA) - parseFloat(valB) : parseFloat(valB) - parseFloat(valA);
-            //         } else if (key === "ata") {
-            //             const parseDate = (str) => {
-            //                 // expected format: "dd Mon yyyy"
-            //                 const parts = str.split(" ");
-            //                 if (parts.length !== 3) return new Date(0); // fallback
-            //                 const [day, monthStr, year] = parts;
-            //                 const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-            //                     .findIndex(m => m.toLowerCase() === monthStr.toLowerCase());
-            //                 return new Date(parseInt(year), month, parseInt(day));
-            //             };
-            //             const dateA = parseDate(valA);
-            //             const dateB = parseDate(valB);
-            //             return ascending ? dateA - dateB : dateB - dateA;
-            //         }
-            //         return ascending ? valA.localeCompare(valB) : valB.localeCompare(valA);
-
-            //     });
-
-            //     const tbody = document.querySelector('#warehouse-table tbody');
-            //     tbody.innerHTML = '';
-            //     sortedRows.forEach(row => tbody.appendChild(row));
-            // }
-
-            // function updateSortIndicators() {
-            //     headers.forEach(h => {
-            //         const indicator = h.querySelector('.sort-indicator');
-            //         if (h.getAttribute('data-sort') === currentSort.key) {
-            //             indicator.textContent = currentSort.direction === 'asc' ? 'в†‘' : 'в†“';
-            //         } else {
-            //             indicator.textContent = '';
-            //         }
-            //     });
-            // }
-        });
-    </script> -->
-
-    <!-- Dark mode -->
     <script>
+        // Dark mode toggle
         const toggle = document.getElementById('dark-mode-toggle');
-
-        if (localStorage.getItem('dark-mode') === 'enabled') {
-            document.documentElement.classList.add('dark');
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('dark-mode',
+                    document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
+            });
         }
 
-        toggle.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            localStorage.setItem('dark-mode',
-                document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled'
-            );
-        });
-    </script>
-
-    <!-- Confirmation modal -->
-    <script>
-        document.querySelectorAll('.delete-form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                const confirmed = confirm('Are you sure you want to delete this warehouse order?');
-                if (!confirmed) {
-                    e.preventDefault();
-                }
-            });
-        });
-    </script>
-
-    <!--  -->
-    <script>
+        // Stockreport modal
         function closeModal() {
             const modal = document.getElementById('stockreport-modal');
             const content = document.getElementById('stockreport-modal-content');
-
-            // Hide modal and clear content
-            modal.classList.remove('flex');
             modal.classList.add('hidden');
+            modal.classList.remove('flex');
             content.innerHTML = '';
-
-            // Restore scroll
-            document.body.classList.remove('overflow-hidden');
             document.body.style.overflow = '';
-            document.body.style.height = '';
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('stockreport-modal');
-            const content = document.getElementById('stockreport-modal-content');
+            lucide.createIcons();
 
             document.querySelectorAll('.open-stockreport-modal').forEach(button => {
                 button.addEventListener('click', async () => {
                     const itemId = button.dataset.itemId;
-
+                    const modal = document.getElementById('stockreport-modal');
+                    const content = document.getElementById('stockreport-modal-content');
                     try {
-                        // Lock scroll and show modal
-                        document.body.classList.add('overflow-hidden');
                         document.body.style.overflow = 'hidden';
-                        document.body.style.height = '100vh';
-
                         modal.classList.remove('hidden');
                         modal.classList.add('flex');
-
-                        // Fetch report
                         const response = await fetch(`/stockreport/view/${itemId}`);
                         const html = await response.text();
                         content.innerHTML = html;
-
-                        // Load editing script after content is loaded
                         const script = document.createElement('script');
                         script.src = '/static/js/view_stockreport.js';
-                        script.onload = () => console.log("вњ… view_stockreport.js loaded");
                         document.body.appendChild(script);
                     } catch (error) {
-                        console.error("вќЊ Error loading stockreport modal:", error);
-                        alert("Failed to open stockreport modal.");
+                        console.error('Error loading stockreport:', error);
+                        alert('Failed to open stockreport.');
                         closeModal();
                     }
                 });
             });
         });
     </script>
-
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>lucide.createIcons();</script>
-
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        lucide.createIcons();
-    </script>
-    <!-- Stockreport Modal -->
-    <div id="stockreport-modal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-60 overflow-y-auto">
-        <div class="min-h-screen w-full bg-white dark:bg-gray-900 p-6">
-            <!-- Close Button (Top-right) -->
-            <button onclick="closeModal()"
-                class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-200 transition duration-150 z-50"
-                title="Close Report">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white hover:text-black" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-
-            <div id="stockreport-modal-content">
-                <!-- Injected HTML from openStockReport() -->
-            </div>
-        </div>
-    </div>
 
 </body>
 
