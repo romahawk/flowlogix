@@ -82,17 +82,15 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            const toggle = document.getElementById('dark-mode-toggle');
-            if (toggle) {
-                toggle.addEventListener('click', () => {
-                    document.documentElement.classList.toggle('dark');
-                    localStorage.setItem('dark-mode',
-                        document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
-                });
-            }
-        });
+        lucide.createIcons();
+        const toggle = document.getElementById('dark-mode-toggle');
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.setItem('dark-mode',
+                    document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
+            });
+        }
     </script>
 </body>
 
