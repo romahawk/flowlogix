@@ -249,15 +249,15 @@
     <div class="p-2 sm:p-2 space-y-3">
         <!-- Dashboard Tabs -->
         <div class="p-1 sm:p-1 space-y-1">
-            <div class="flex items-center gap-2 border-b border-gray-700 pb-1 mb-2 mt-2">
+            <div class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 pb-px mb-2 mt-2">
                 <button id="tab-orders" type="button"
-                        class="text-lg sm:text-xl font-semibold tracking-wide text-gray-900 dark:text-gray-100 flex items-center gap-2 px-2 py-1 rounded-md bg-gray-200 dark:bg-gray-700">
-                    <i data-lucide="boxes"></i>
+                        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-md border-b-2 -mb-px transition-colors duration-150 border-blue-500 text-blue-600 dark:text-blue-400">
+                    <i data-lucide="boxes" class="w-4 h-4"></i>
                     Your Orders
                 </button>
                 <button id="tab-timeline" type="button"
-                        class="text-lg sm:text-xl font-semibold tracking-wide text-gray-700 dark:text-gray-300 flex items-center gap-2 px-2 py-1 rounded-md">
-                    <i data-lucide="activity"></i>
+                        class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-md border-b-2 -mb-px transition-colors duration-150 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                    <i data-lucide="gantt-chart" class="w-4 h-4"></i>
                     Timeline
                 </button>
             </div>
@@ -274,8 +274,8 @@
 
                 <div id="orders-table-container" class="orders-table-container overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-md">
                     <table class="min-w-[800px] w-full bg-gray-100 dark:bg-gray-900">
-                        <thead class="bg-gray-200 dark:bg-gray-800">
-                            <tr class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs sm:text-sm">
+                        <thead>
+                            <tr class="bg-slate-800 dark:bg-slate-900 text-slate-200 uppercase text-xs tracking-wide">
                                 <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="order_date">Order Date <span class="sort-indicator"></span></th>
                                 <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="order_number">Order # <span class="sort-indicator"></span></th>
                                 <th class="px-2 py-1 text-center whitespace-nowrap" data-sort="product_name">Product Name <span class="sort-indicator"></span></th>
@@ -331,14 +331,17 @@
                 </select>
             </div>
             <div class="legend mb-0">
-                <span class="legend-item cursor-pointer" data-status="in process">
-                    <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(255, 165, 0, 0.8);"></span> In Process
+                <span class="legend-item cursor-pointer select-none" data-status="in process">
+                    <span class="legend-color inline-block w-3 h-3 mr-1.5 rounded-full" style="background-color: rgba(255, 165, 0, 0.9);"></span>
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">In Process</span>
                 </span>
-                <span class="legend-item cursor-pointer" data-status="en route">
-                    <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(0, 123, 255, 0.8);"></span> En Route
+                <span class="legend-item cursor-pointer select-none" data-status="en route">
+                    <span class="legend-color inline-block w-3 h-3 mr-1.5 rounded-full" style="background-color: rgba(0, 123, 255, 0.9);"></span>
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">En Route</span>
                 </span>
-                <span class="legend-item cursor-pointer" data-status="arrived">
-                    <span class="legend-color inline-block w-4 h-4 mr-2" style="background-color: rgba(144, 238, 144, 0.8);"></span> Arrived
+                <span class="legend-item cursor-pointer select-none" data-status="arrived">
+                    <span class="legend-color inline-block w-3 h-3 mr-1.5 rounded-full" style="background-color: rgba(56, 200, 100, 0.9);"></span>
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Arrived</span>
                 </span>
             </div>
             <div aria-hidden="true"></div>
@@ -376,19 +379,16 @@
                 ordersPane.classList.toggle("hidden", !ordersActive);
                 timelinePane.classList.toggle("hidden", ordersActive);
 
-                tabOrders.classList.toggle("bg-gray-200", ordersActive);
-                tabOrders.classList.toggle("dark:bg-gray-700", ordersActive);
-                tabOrders.classList.toggle("text-gray-900", ordersActive);
-                tabOrders.classList.toggle("dark:text-gray-100", ordersActive);
-                tabOrders.classList.toggle("text-gray-700", !ordersActive);
-                tabOrders.classList.toggle("dark:text-gray-300", !ordersActive);
+                // Active tab: blue underline + blue text
+                tabOrders.classList.toggle("border-blue-500", ordersActive);
+                tabOrders.classList.toggle("text-blue-600", ordersActive);
+                tabOrders.classList.toggle("border-transparent", !ordersActive);
+                tabOrders.classList.toggle("text-gray-500", !ordersActive);
 
-                tabTimeline.classList.toggle("bg-gray-200", !ordersActive);
-                tabTimeline.classList.toggle("dark:bg-gray-700", !ordersActive);
-                tabTimeline.classList.toggle("text-gray-900", !ordersActive);
-                tabTimeline.classList.toggle("dark:text-gray-100", !ordersActive);
-                tabTimeline.classList.toggle("text-gray-700", ordersActive);
-                tabTimeline.classList.toggle("dark:text-gray-300", ordersActive);
+                tabTimeline.classList.toggle("border-blue-500", !ordersActive);
+                tabTimeline.classList.toggle("text-blue-600", !ordersActive);
+                tabTimeline.classList.toggle("border-transparent", ordersActive);
+                tabTimeline.classList.toggle("text-gray-500", ordersActive);
 
                 localStorage.setItem("dashboard-active-tab", mode);
 
