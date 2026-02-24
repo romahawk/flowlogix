@@ -94,6 +94,66 @@
       <span class="hidden sm:inline">Logs</span>
     </a>
 
+    {% if DEMO_MODE %}
+    <!-- Demo controls dropdown -->
+    <div class="relative" id="demo-menu-wrapper">
+      <button id="demo-menu-btn" type="button"
+        class="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/30 transition-colors duration-150"
+        title="Demo data controls">
+        <i data-lucide="flask-conical" class="w-3.5 h-3.5 flex-shrink-0"></i>
+        <span class="hidden sm:inline">Demo</span>
+        <i data-lucide="chevron-down" class="w-3 h-3 flex-shrink-0"></i>
+      </button>
+      <div id="demo-menu-dropdown"
+        class="hidden absolute right-0 mt-1 w-44 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-50 py-1">
+        <button type="button" onclick="demoAction('seed')"
+          class="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+          <i data-lucide="sprout" class="w-3.5 h-3.5 text-green-400"></i> Seed orders
+        </button>
+        <button type="button" onclick="demoAction('reset')"
+          class="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 flex items-center gap-2">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-blue-400"></i> Reset demo
+        </button>
+        <div class="border-t border-slate-600 my-1"></div>
+        <button type="button" onclick="demoAction('clear')"
+          class="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-slate-700 flex items-center gap-2">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Clear all orders
+        </button>
+      </div>
+    </div>
+    <script>
+      (function () {
+        const btn = document.getElementById("demo-menu-btn");
+        const menu = document.getElementById("demo-menu-dropdown");
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          menu.classList.toggle("hidden");
+        });
+        document.addEventListener("click", () => menu.classList.add("hidden"));
+
+        window.demoAction = async function (action) {
+          menu.classList.add("hidden");
+          const labels = { seed: "Seed orders", reset: "Reset demo data", clear: "Clear ALL orders" };
+          if (action === "reset" || action === "clear") {
+            if (!confirm(`${labels[action]}?\n\nThis cannot be undone.`)) return;
+          }
+          try {
+            const r = await fetch(`/demo/${action}`, { method: "POST", credentials: "same-origin" });
+            const j = await r.json();
+            if (!r.ok) { alert(j.error || "Error"); return; }
+            const msg = action === "seed"  ? `Seeded ${j.count} orders.` :
+                        action === "reset" ? `Reset: removed ${j.deleted}, added ${j.seeded} orders.` :
+                                            `Cleared ${j.deleted} orders.`;
+            alert(msg);
+            window.location.reload();
+          } catch (e) {
+            alert("Request failed: " + e.message);
+          }
+        };
+      })();
+    </script>
+    {% endif %}
+
     <!-- Separator -->
     <div class="w-px h-5 bg-white/20 mx-0.5"></div>
 

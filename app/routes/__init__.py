@@ -14,6 +14,7 @@ def register_routes(app):
     from .products_routes import products_bp
     from .admin_routes import admin_bp
     from .activity_routes import activity_bp
+    from .demo_routes import demo_bp
     import time
 
     app.register_blueprint(auth_bp)
@@ -29,6 +30,7 @@ def register_routes(app):
     app.register_blueprint(products_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(activity_bp)
+    app.register_blueprint(demo_bp)
 
     app.config['VERSION'] = str(int(time.time()))
 
