@@ -240,11 +240,25 @@ function renderTimeline(data) {
   const heightPerOrder = 52;
   const headerHeight = 58;
   const canvasHeight = chartData.length * heightPerOrder + headerHeight;
-  const timelineContainer = canvas.parentElement;
+
+  // Chart.js (responsive=true, maintainAspectRatio=false) sizes the canvas by
+  // reading canvas.parentNode.clientHeight — NOT canvas.style.height.
+  // We wrap the canvas in an explicit-height div so Chart.js reads the right value.
+  let canvasWrapper = document.getElementById("timeline-canvas-wrapper");
+  if (!canvasWrapper) {
+    canvasWrapper = document.createElement("div");
+    canvasWrapper.id = "timeline-canvas-wrapper";
+    canvasWrapper.style.position = "relative";
+    canvas.parentNode.insertBefore(canvasWrapper, canvas);
+    canvasWrapper.appendChild(canvas);
+  }
+  canvasWrapper.style.height = `${canvasHeight}px`;
+
+  // Outer container scrolls; wrapper (canvas direct parent) holds the explicit height.
+  const timelineContainer = canvasWrapper.parentElement;
   timelineContainer.style.maxHeight = "760px";
   timelineContainer.style.overflowY = "auto";
   timelineContainer.style.overflowX = "hidden";
-  canvas.style.height = `${canvasHeight}px`;
 
   if (loadingIndicator) loadingIndicator.style.display = "none";
   canvas.style.display = "block";
@@ -701,7 +715,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const footerReserve = 76; // pagination and breathing room
     const available = Math.max(360, window.innerHeight - rect.top - footerReserve);
     container.style.height = `${available}px`;
-    container.style.overflowY = "hidden";
+    container.style.overflowY = "auto";
     updatePaginationControls();
   }
 
@@ -713,6 +727,8 @@ document.addEventListener("DOMContentLoaded", function () {
     renderTablePage();
     fitOrdersTableToViewport();
   }
+
+  window.addEventListener("resize", fitOrdersTableToViewport);
 
   /* ---------- sorting clicks ---------- */
   document.querySelectorAll("table th[data-sort]").forEach((header) => {
