@@ -1,94 +1,125 @@
 <header
-  class="sticky top-0 z-50 flex justify-between items-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-800 text-white shadow-md">
-  <!-- Left: Logo + Title -->
-  <div class="flex items-center space-x-3">
+  class="sticky top-0 z-50 flex justify-between items-center px-4 sm:px-6 py-2 sm:py-3 bg-slate-900 text-white shadow-lg border-b border-slate-700">
+  <!-- Left: Logo + Title + Tour -->
+  <div class="flex items-center gap-3">
     <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo"
-      class="h-8 sm:h-10 rounded bg-white p-1" />
-    <h1 class="text-base sm:text-2xl font-semibold">FlowLogix</h1>
+      class="h-8 sm:h-9 rounded bg-white p-0.5 flex-shrink-0" />
+    <span class="text-sm sm:text-lg font-bold tracking-tight text-white">FlowLogix</span>
     <a href="{{ url_for('onboarding.show_onboarding') }}"
-      class="ml-4 px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition flex items-center gap-1">
-      <i data-lucide="book-open" class="w-4 h-4"></i>
-      Onboarding
+      class="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-white/10 transition-colors duration-150">
+      <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+      Tour
     </a>
   </div>
 
   <!-- Right: Navigation & Controls -->
-  <div class="flex items-center space-x-2 sm:space-x-3">
-    <a href="{{ url_for('dashboard.dashboard') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
-       {{ 'bg-yellow-500 text-white text-lg font-bold' if current_path.startswith(url_for('dashboard.dashboard')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
-       hover:bg-opacity-80 hover:shadow-md">
-      <i data-lucide="compass" class="w-5 h-5"></i>
-      Dashboard
+  <nav class="flex items-center gap-1 sm:gap-1.5">
+
+    <a href="{{ url_for('dashboard.dashboard') }}"
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
+      {% if current_path.startswith(url_for('dashboard.dashboard')) %}
+        bg-white/15 text-white ring-1 ring-white/25
+      {% else %}
+        text-slate-300 hover:text-white hover:bg-white/10
+      {% endif %}">
+      <i data-lucide="layout-dashboard" class="w-4 h-4 flex-shrink-0"></i>
+      <span class="hidden sm:inline">Dashboard</span>
     </a>
 
-    <a href="{{ url_for('warehouse.warehouse') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
-       {{ 'bg-blue-600 text-white text-lg font-bold' if current_path.startswith(url_for('warehouse.warehouse')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
-       hover:bg-opacity-80 hover:shadow-md">
-      <i data-lucide="package" class="w-5 h-5"></i>
-      Warehouse
+    <a href="{{ url_for('warehouse.warehouse') }}"
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
+      {% if current_path.startswith(url_for('warehouse.warehouse')) %}
+        bg-white/15 text-white ring-1 ring-white/25
+      {% else %}
+        text-slate-300 hover:text-white hover:bg-white/10
+      {% endif %}">
+      <i data-lucide="package" class="w-4 h-4 flex-shrink-0"></i>
+      <span class="hidden sm:inline">Warehouse</span>
     </a>
 
-    <a href="{{ url_for('delivered.delivered') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
-       {{ 'bg-purple-600 text-white text-lg font-bold' if current_path.startswith(url_for('delivered.delivered')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
-       hover:bg-opacity-80 hover:shadow-md">
-      <i data-lucide="truck" class="w-5 h-5"></i>
-      Delivered
+    <a href="{{ url_for('delivered.delivered') }}"
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
+      {% if current_path.startswith(url_for('delivered.delivered')) %}
+        bg-white/15 text-white ring-1 ring-white/25
+      {% else %}
+        text-slate-300 hover:text-white hover:bg-white/10
+      {% endif %}">
+      <i data-lucide="truck" class="w-4 h-4 flex-shrink-0"></i>
+      <span class="hidden sm:inline">Delivered</span>
     </a>
 
+    <!-- Separator -->
+    <div class="hidden sm:block w-px h-5 bg-white/20 mx-0.5"></div>
+
+    <!-- Context-sensitive action button -->
     {% if current_path.startswith(url_for('dashboard.dashboard')) %}
     <button
-      class="w-[180px] flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition toggle-form-btn"
+      class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-md shadow-sm transition-colors duration-150 toggle-form-btn"
       title="Add a new incoming order">
-      <i data-lucide="plus" class="w-4 h-4"></i>
-      Add New Order
+      <i data-lucide="plus" class="w-4 h-4 flex-shrink-0"></i>
+      <span class="hidden sm:inline">New Order</span>
     </button>
     {% elif current_path.startswith(url_for('warehouse.warehouse')) %}
     <button onclick="document.getElementById('manual-order-form').classList.toggle('hidden')"
-      class="w-[180px] flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition"
+      class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold rounded-md shadow-sm transition-colors duration-150"
       title="Create a new manually stocked order">
-      <i data-lucide="plus" class="w-4 h-4"></i>
-      Add Manual Order
+      <i data-lucide="plus" class="w-4 h-4 flex-shrink-0"></i>
+      <span class="hidden sm:inline">Add Manual</span>
     </button>
     {% elif current_path.startswith(url_for('delivered.delivered')) %}
-    <div class="w-[180px]"></div>
+    <div class="hidden sm:block w-[90px]"></div>
     {% endif %}
 
     {% if current_user.role == 'admin' %}
-    <a href="{{ url_for('admin.user_management') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
-   {{ 'bg-indigo-600 text-white text-lg font-bold' if current_path.startswith(url_for('admin.user_management')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
-   hover:bg-opacity-80 hover:shadow-md">
-      <i data-lucide="users" class="w-5 h-5"></i>
-      Manage Users
+    <a href="{{ url_for('admin.user_management') }}"
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
+      {% if current_path.startswith(url_for('admin.user_management')) %}
+        bg-white/15 text-white ring-1 ring-white/25
+      {% else %}
+        text-slate-300 hover:text-white hover:bg-white/10
+      {% endif %}">
+      <i data-lucide="users" class="w-4 h-4 flex-shrink-0"></i>
+      <span class="hidden sm:inline">Users</span>
     </a>
     {% endif %}
 
-    <a href="{{ url_for('activity.activity_logs') }}" class="px-4 py-1.5 rounded-md font-medium transition-all duration-200 flex items-center gap-1
-   {{ 'bg-amber-500 text-white text-lg font-bold' if current_path.startswith(url_for('activity.activity_logs')) else 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white' }}
-   hover:bg-opacity-80 hover:shadow-md">
-      <i data-lucide="notebook-text" class="w-5 h-5"></i>
-      Activity Logs
+    <a href="{{ url_for('activity.activity_logs') }}"
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
+      {% if current_path.startswith(url_for('activity.activity_logs')) %}
+        bg-white/15 text-white ring-1 ring-white/25
+      {% else %}
+        text-slate-300 hover:text-white hover:bg-white/10
+      {% endif %}">
+      <i data-lucide="scroll-text" class="w-4 h-4 flex-shrink-0"></i>
+      <span class="hidden sm:inline">Logs</span>
     </a>
 
+    <!-- Separator -->
+    <div class="w-px h-5 bg-white/20 mx-0.5"></div>
 
-    <span class="ml-4 px-2 py-1 rounded bg-gray-700 text-white text-sm flex items-center gap-1">
-      <i data-lucide="user" class="w-4 h-4"></i>
-      {{ current_user.username }} ({{ current_user.role }})
+    <!-- User badge -->
+    <span class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white/10 text-slate-200 text-xs font-medium">
+      <i data-lucide="circle-user" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>
+      <span class="hidden sm:inline">{{ current_user.username }}</span>
+      <span class="hidden md:inline text-slate-400">({{ current_user.role }})</span>
     </span>
 
-    <a href="{{ url_for('auth.logout') }}" title="Logout" class="text-white hover:text-red-400 ml-1">
-      <i data-lucide="log-out" class="w-5 h-5"></i>
+    <!-- Logout -->
+    <a href="{{ url_for('auth.logout') }}" title="Logout"
+      class="flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:text-red-400 hover:bg-white/10 transition-colors duration-150">
+      <i data-lucide="log-out" class="w-4 h-4"></i>
     </a>
 
     <!-- Dark Mode Toggle -->
     <button id="dark-mode-toggle"
-      class="relative inline-flex items-center h-5 w-10 sm:h-8 sm:w-16 rounded-full transition-colors duration-300 focus:outline-none flex-shrink-0"
+      class="relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-300 focus:outline-none flex-shrink-0"
       aria-label="Toggle dark mode">
       <span id="dark-mode-track"
-        class="absolute inset-0 h-5 w-10 sm:h-8 sm:w-16 rounded-full bg-gray-300 dark:bg-gray-700 transition-colors duration-300"></span>
+        class="absolute inset-0 rounded-full bg-slate-600 dark:bg-blue-600 transition-colors duration-300"></span>
       <span id="dark-mode-thumb"
-        class="absolute left-1 top-1 h-3 w-3 sm:h-6 sm:w-6 rounded-full bg-gray-800 dark:bg-gray-100 transform transition-transform duration-300 shadow-md dark:shadow-white/50 dark:translate-x-5 sm:dark:translate-x-8"></span>
+        class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transform transition-transform duration-300 shadow-md dark:translate-x-5"></span>
     </button>
-  </div>
+  </nav>
 
   <!-- Onboarding Tour Modal -->
   <div id="tourModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center">

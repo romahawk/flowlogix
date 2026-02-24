@@ -237,9 +237,9 @@ function renderTimeline(data) {
     return;
   }
 
-  const heightPerOrder = 50;
+  const heightPerOrder = 52;
   const headerHeight = 58;
-  const canvasHeight = Math.max(340, chartData.length * heightPerOrder + headerHeight);
+  const canvasHeight = chartData.length * heightPerOrder + headerHeight;
   const timelineContainer = canvas.parentElement;
   timelineContainer.style.maxHeight = "760px";
   timelineContainer.style.overflowY = "auto";
@@ -271,8 +271,8 @@ function renderTimeline(data) {
           backgroundColor: chartData.map((item) => item.backgroundColor),
           borderColor: chartData.map((item) => item.borderColor),
           borderWidth: 1,
-          barPercentage: 0.75,
-          categoryPercentage: 0.88,
+          barPercentage: 0.55,
+          categoryPercentage: 0.85,
         },
       ],
     },
@@ -564,6 +564,18 @@ document.addEventListener("DOMContentLoaded", function () {
     return Number.isFinite(parsed) ? parsed.toFixed(2) : "-";
   }
 
+  function statusBadge(status) {
+    const s = (status || "").toLowerCase().trim();
+    const styles = {
+      "in process": "background:rgba(255,165,0,0.15);color:#b45309;border:1px solid rgba(255,165,0,0.4)",
+      "en route":   "background:rgba(0,123,255,0.12);color:#1d4ed8;border:1px solid rgba(0,123,255,0.35)",
+      "arrived":    "background:rgba(56,200,100,0.13);color:#166534;border:1px solid rgba(56,200,100,0.4)",
+    };
+    const style = styles[s] || "background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db";
+    const label = status ? status.charAt(0).toUpperCase() + status.slice(1) : "-";
+    return `<span style="${style};display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap">${label}</span>`;
+  }
+
   function renderTableRows(rows) {
     const tbody = document.querySelector("table tbody");
     if (!tbody) return;
@@ -604,7 +616,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.etd || "-"}</td>
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.eta || "-"}</td>
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.ata || ""}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.transit_status || "-"}</td>
+        <td class="px-2 py-1 whitespace-nowrap">${statusBadge(order.transit_status)}</td>
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${transportIcon}</td>
         <td class="px-2 py-2 text-center text-xs sm:text-sm">
           <div class="flex flex-col sm:flex-row sm:justify-center gap-1 sm:gap-2">

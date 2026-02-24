@@ -179,7 +179,7 @@ h2 {
 
 /* Orders Table Container */
 .orders-table-container {
-  max-height: 400px;
+  max-height: 480px;
   overflow-y: auto;
   width: 100%;
   position: relative;
@@ -259,8 +259,8 @@ table td a:hover {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   padding: 10px;
-  min-height: 200px; /* Minimum height for visibility */
-  max-height: 620px;
+  min-height: 100px;
+  max-height: 680px;
   overflow-y: auto;
   overflow-x: hidden;
 }
