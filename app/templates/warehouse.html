@@ -365,14 +365,14 @@
             document.body.style.overflow = '';
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+        // Render lucide icons — called directly (DOM is already parsed at this point)
+        lucide.createIcons();
 
-            document.querySelectorAll('.open-stockreport-modal').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const itemId = button.dataset.itemId;
-                    const modal = document.getElementById('stockreport-modal');
-                    const content = document.getElementById('stockreport-modal-content');
+        document.querySelectorAll('.open-stockreport-modal').forEach(button => {
+            button.addEventListener('click', async () => {
+                const itemId = button.dataset.itemId;
+                const modal = document.getElementById('stockreport-modal');
+                const content = document.getElementById('stockreport-modal-content');
                     try {
                         document.body.style.overflow = 'hidden';
                         modal.classList.remove('hidden');
@@ -390,8 +390,8 @@
                     }
                 });
             });
-        });
     </script>
+
 
 </body>
 
