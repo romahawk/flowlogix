@@ -436,7 +436,10 @@ canvas#timelineChart {
 }
 
 /* Action icon buttons in orders table */
-.action-icon-btn {
+/* Use element+class selectors (0,1,1) to beat the global button{color:#fff} rule (0,0,1)
+   while still losing to Tailwind hover utilities (0,2,0) so hover colours work normally */
+button.action-icon-btn,
+a.action-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -449,9 +452,6 @@ canvas#timelineChart {
   border: none;
   cursor: pointer;
   transition: color 0.15s ease, background-color 0.15s ease;
-}
-.action-icon-btn:hover {
-  /* colour overridden per-button via Tailwind hover utility classes */
 }
 
 /* Buttons and Links */
