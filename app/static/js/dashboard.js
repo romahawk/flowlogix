@@ -811,7 +811,7 @@ document.addEventListener("DOMContentLoaded", function () {
   /* ---------- add/edit/delete handlers (unchanged) ---------- */
   const addForm = document.getElementById("add-order-form");
   if (addForm) {
-    addForm.addEventListener("submit", function (event) {
+    addForm.addEventListener("submit", async function (event) {
       event.preventDefault();
 
       const quantity = parseFloat(document.getElementById("quantity").value);
@@ -820,10 +820,20 @@ document.addEventListener("DOMContentLoaded", function () {
       const eta = document.getElementById("eta").value;
       const requiredDelivery = document.getElementById("required_delivery").value;
 
-      if (!requiredDelivery.trim()) return alert("Required Delivery cannot be empty.");
-      if (isNaN(quantity) || quantity <= 0) return alert("Quantity must be a positive number.");
-      if (etd && orderDate && orderDate > etd) return alert("Order Date cannot be later than ETD.");
-      if (etd && eta && etd > eta) return alert("ETD cannot be later than ETA.");
+      if (!requiredDelivery.trim()) return showFormNotify("Required Delivery cannot be empty.", "error");
+      if (isNaN(quantity) || quantity <= 0) return showFormNotify("Quantity must be a positive number.", "error");
+      if (etd && orderDate && orderDate > etd) return showFormNotify("Order Date cannot be later than ETD.", "error");
+      if (etd && eta && etd > eta) return showFormNotify("ETD cannot be later than ETA.", "error");
+
+      const submitBtn = document.getElementById("add-order-submit");
+      const btnSpan = submitBtn?.querySelector("span");
+      const btnIcon = submitBtn?.querySelector("i[data-lucide]");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        if (btnSpan) btnSpan.textContent = "Saving…";
+        if (btnIcon) btnIcon.setAttribute("data-lucide", "loader-2");
+        lucide.createIcons({ nodes: submitBtn ? [submitBtn] : [] });
+      }
 
       const formData = new FormData(addForm);
       const dateFields = ["order_date","required_delivery","payment_date","etd","eta","ata"];
@@ -836,21 +846,29 @@ document.addEventListener("DOMContentLoaded", function () {
         converted.append(k, v);
       }
 
-      fetch("/add_order", { method: "POST", body: converted })
-        .then((r) => r.json())
-        .then(async (data) => {
-          if (data.success) {
-            alert("Order added successfully!");
-            addForm.reset();
-            await loadOrdersForYear(selectedYear); // refresh
-          } else {
-            alert("Error adding order: " + (data.message || "Unknown error"));
-          }
-        })
-        .catch((err) => {
-          console.error("add error", err);
-          alert("Error adding order. Please try again.");
-        });
+      try {
+        const r = await fetch("/add_order", { method: "POST", body: converted });
+        const data = await r.json();
+        if (data.success) {
+          showFormNotify("Order added successfully!", "success");
+          addForm.reset();
+          await loadOrdersForYear(selectedYear);
+          // Auto-close after a short pause so user sees the success message
+          setTimeout(closeAddOrderForm, 1800);
+        } else {
+          showFormNotify("Error: " + (data.message || "Unknown error"), "error");
+        }
+      } catch (err) {
+        console.error("add error", err);
+        showFormNotify("Network error — please try again.", "error");
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          if (btnSpan) btnSpan.textContent = "Add Order";
+          if (btnIcon) btnIcon.setAttribute("data-lucide", "plus-circle");
+          lucide.createIcons({ nodes: submitBtn ? [submitBtn] : [] });
+        }
+      }
     });
   }
 
@@ -990,17 +1008,68 @@ document.addEventListener("DOMContentLoaded", function () {
     if (event.target === modal) modal.style.display = "none";
   });
 
+  /* ── Add-order form helpers ─────────────────────────── */
+  function nextOrderNumber() {
+    const yyyy = new Date().getFullYear();
+    const n = Number(localStorage.getItem("demo_po_counter") || "100") + 1;
+    localStorage.setItem("demo_po_counter", String(n));
+    return `PO-${yyyy}-${String(n).padStart(3, "0")}`;
+  }
+
+  function showFormNotify(msg, type) {
+    const el = document.getElementById("order-form-notify");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "form-notify " + (type === "error" ? "form-notify-error" : "form-notify-success");
+    el.style.display = "block";
+    if (type === "success") {
+      clearTimeout(el._notifyTimer);
+      el._notifyTimer = setTimeout(() => { el.style.display = "none"; }, 4000);
+    }
+  }
+
+  function closeAddOrderForm() {
+    const section = document.getElementById("add-order-section");
+    const form = document.getElementById("add-order-form");
+    const btn = document.querySelector(".toggle-form-btn");
+    if (section) section.style.display = "none";
+    if (form) form.reset();
+    const notifyEl = document.getElementById("order-form-notify");
+    if (notifyEl) notifyEl.style.display = "none";
+    if (btn) {
+      btn.querySelector(".btn-icon-open")?.classList.remove("hidden");
+      btn.querySelector(".btn-icon-close")?.classList.add("hidden");
+      const span = btn.querySelector("span");
+      if (span) span.textContent = "New Order";
+    }
+  }
+
+  /* ── Toggle form open/close ─────────────────────────── */
   const toggleFormBtn = document.querySelector(".toggle-form-btn");
   const addOrderSection = document.getElementById("add-order-section");
   if (toggleFormBtn && addOrderSection) {
     toggleFormBtn.addEventListener("click", () => {
       const isHidden =
         addOrderSection.style.display === "none" || addOrderSection.style.display === "";
-      addOrderSection.style.display = isHidden ? "block" : "none";
-      toggleFormBtn.textContent = isHidden ? "Hide Add Order Form" : "Add New Order";
-      if (isHidden) initializeProductSelect();
+      if (isHidden) {
+        addOrderSection.style.display = "block";
+        toggleFormBtn.querySelector(".btn-icon-open")?.classList.add("hidden");
+        toggleFormBtn.querySelector(".btn-icon-close")?.classList.remove("hidden");
+        const span = toggleFormBtn.querySelector("span");
+        if (span) span.textContent = "Close";
+        initializeProductSelect();
+        // Pre-fill order number once on open
+        const orderInput = document.getElementById("order_number");
+        if (orderInput && !orderInput.value) orderInput.value = nextOrderNumber();
+      } else {
+        closeAddOrderForm();
+      }
     });
   }
+
+  /* ── Close via × button and Cancel button ───────────── */
+  document.getElementById("close-add-order")?.addEventListener("click", closeAddOrderForm);
+  document.getElementById("cancel-add-order")?.addEventListener("click", closeAddOrderForm);
 
   window.addEventListener("resize", () => {
     fitOrdersTableToViewport();

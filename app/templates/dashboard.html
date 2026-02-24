@@ -41,75 +41,87 @@
     {% include '_navbar.html' %}
 
     <!-- Add New Order Form (Collapsible) -->
-    <div id="add-order-section" class="form-section p-6 bg-white dark:bg-gray-900 rounded-lg shadow-md" style="display: none;">
-        <h2 class="text-xl font-semibold mb-4">Add New Order</h2>
+    <div id="add-order-section" class="form-section border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" style="display: none;">
+        <div class="max-w-screen-xl mx-auto px-4 sm:px-6 py-5">
 
-        <!-- dummy inputs to fully disable browser autofill -->
-        <input type="text" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" autocomplete="username">
-        <input type="password" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" autocomplete="new-password">
-
-        <form id="add-order-form" class="add-order-form grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" autocomplete="off">
-            <div class="form-group">
-                <label for="order_date" class="block text-sm font-medium">Order Date:</label>
-                <input type="date" id="order_date" name="order_date" required
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
+            <!-- Header row -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="package-plus" class="w-5 h-5 text-emerald-500"></i>
+                    <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100">New Incoming Order</h2>
+                </div>
+                <button type="button" id="close-add-order" class="action-icon-btn hover:text-red-400 hover:bg-red-400/10" title="Close">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
             </div>
 
-            <div class="form-group">
-                <label for="order_number" class="block text-sm font-medium">Order #:</label>
-                <input type="text" id="order_number" name="order_number" required list="orderno-options"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
-                       placeholder="e.g. PO-2025-001">
-            </div>
+            <!-- Inline notification -->
+            <div id="order-form-notify" class="form-notify" role="alert"></div>
 
-            <div class="form-group">
-                <label for="product_name" class="block text-sm font-medium">Product Name:</label>
-                <select id="product_name" name="product_name" placeholder="Select or type a product" class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200" required>
-                </select>
-            </div>
+            <!-- Anti-autofill decoys -->
+            <input type="text" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" autocomplete="username">
+            <input type="password" style="position:absolute;left:-9999px;opacity:0;height:0;width:0" autocomplete="new-password">
 
-            <div class="form-group">
-                <label for="buyer" class="block text-sm font-medium">Buyer:</label>
-                <input type="text" id="buyer" name="buyer" required list="buyer-options"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
-                       placeholder="Select buyer">
-                <datalist id="buyer-options">
-                    <option value="Acme Clinics GmbH">
-                    <option value="HealthPlus Ltd">
-                    <option value="BioCare AG">
-                    <option value="Nova Pharma BV">
-                    <option value="Medico Supplies Sp. z o.o.">
-                    <option value="Wellness Partners SA">
-                </datalist>
-            </div>
+            <form id="add-order-form" class="add-order-form grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-3" autocomplete="off">
 
-            <div class="form-group">
-                <label for="responsible" class="block text-sm font-medium">Responsible:</label>
-                <input type="text" id="responsible" name="responsible" required list="responsible-options"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
-                       placeholder="Select person">
-                <datalist id="responsible-options">
-                    <option value="Anna Kramer">
-                    <option value="Ben Schneider">
-                    <option value="Carla Rossi">
-                    <option value="David Weber">
-                    <option value="Elena Nowak">
-                    <option value="Felix Bauer">
-                </datalist>
-            </div>
+                <!-- ── Order Identity ─────────────────────────────── -->
+                <div class="col-span-1 sm:col-span-2 lg:col-span-3 form-section-label">Order Identity</div>
 
-            <div class="form-group">
-                <label for="quantity" class="block text-sm font-medium">Quantity:</label>
-                <input type="number" id="quantity" name="quantity" step="0.01" required
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-            </div>
+                <div class="form-group">
+                    <label for="order_date" class="form-label">Order Date <span class="req-star">*</span></label>
+                    <input type="date" id="order_date" name="order_date" required class="form-input">
+                </div>
 
-            <div class="form-group">
-                <label for="required_delivery" class="block text-sm font-medium">Required Delivery:</label>
-                <div class="relative">
-                    <input type="text" id="required_delivery" name="required_delivery" required
-                           class="mt-1 p-2 w-full border rounded-md bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                           placeholder="e.g. ASAP, Q2 2025" list="delivery-options">
+                <div class="form-group">
+                    <label for="order_number" class="form-label">Order # <span class="req-star">*</span></label>
+                    <input type="text" id="order_number" name="order_number" required class="form-input" placeholder="e.g. PO-2026-001">
+                </div>
+
+                <div class="form-group">
+                    <label for="product_name" class="form-label">Product <span class="req-star">*</span></label>
+                    <select id="product_name" name="product_name" placeholder="Select or type a product" class="form-input" required></select>
+                </div>
+
+                <!-- ── Parties & Quantity ──────────────────────────── -->
+                <div class="col-span-1 sm:col-span-2 lg:col-span-3 form-section-label">Parties &amp; Quantity</div>
+
+                <div class="form-group">
+                    <label for="buyer" class="form-label">Buyer <span class="req-star">*</span></label>
+                    <input type="text" id="buyer" name="buyer" required list="buyer-options" class="form-input" placeholder="Select or type buyer">
+                    <datalist id="buyer-options">
+                        <option value="Acme Clinics GmbH">
+                        <option value="HealthPlus Ltd">
+                        <option value="BioCare AG">
+                        <option value="Nova Pharma BV">
+                        <option value="Medico Supplies Sp. z o.o.">
+                        <option value="Wellness Partners SA">
+                    </datalist>
+                </div>
+
+                <div class="form-group">
+                    <label for="responsible" class="form-label">Responsible <span class="req-star">*</span></label>
+                    <input type="text" id="responsible" name="responsible" required list="responsible-options" class="form-input" placeholder="Select or type name">
+                    <datalist id="responsible-options">
+                        <option value="Anna Kramer">
+                        <option value="Ben Schneider">
+                        <option value="Carla Rossi">
+                        <option value="David Weber">
+                        <option value="Elena Nowak">
+                        <option value="Felix Bauer">
+                    </datalist>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantity" class="form-label">Quantity <span class="req-star">*</span></label>
+                    <input type="number" id="quantity" name="quantity" step="0.01" required class="form-input" placeholder="0">
+                </div>
+
+                <!-- ── Schedule ────────────────────────────────────── -->
+                <div class="col-span-1 sm:col-span-2 lg:col-span-3 form-section-label">Schedule</div>
+
+                <div class="form-group">
+                    <label for="required_delivery" class="form-label">Required Delivery <span class="req-star">*</span></label>
+                    <input type="text" id="required_delivery" name="required_delivery" required class="form-input" placeholder="e.g. ASAP, Q2 2026" list="delivery-options">
                     <datalist id="delivery-options">
                         <option value="ASAP">
                         <option value="By January {{ now.year }}">
@@ -131,89 +143,73 @@
                         <option value="By End of {{ now.year }}">
                     </datalist>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="terms_of_delivery" class="block text-sm font-medium">Terms of Delivery:</label>
-                <input type="text" id="terms_of_delivery" name="terms_of_delivery" required list="incoterm-options"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
-                       placeholder="Incoterm (e.g., FOB)">
-                <datalist id="incoterm-options">
-                    <option value="EXW">
-                    <option value="FCA">
-                    <option value="CPT">
-                    <option value="CIP">
-                    <option value="DAP">
-                    <option value="DPU">
-                    <option value="DDP">
-                    <option value="FAS">
-                    <option value="FOB">
-                    <option value="CFR">
-                    <option value="CIF">
-                </datalist>
-            </div>
+                <div class="form-group">
+                    <label for="payment_date" class="form-label">Payment Date</label>
+                    <input type="date" id="payment_date" name="payment_date" class="form-input">
+                </div>
 
-            <div class="form-group">
-                <label for="payment_date" class="block text-sm font-medium">Payment Date:</label>
-                <input type="date" id="payment_date" name="payment_date"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-            </div>
+                <div class="form-group">
+                    <label for="etd" class="form-label">ETD <span class="text-gray-400 dark:text-gray-500 text-[10px] font-normal">(Est. Departure)</span></label>
+                    <input type="date" id="etd" name="etd" class="form-input">
+                </div>
 
-            <div class="form-group">
-                <label for="etd" class="block text-sm font-medium">ETD:</label>
-                <input type="date" id="etd" name="etd"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-            </div>
+                <div class="form-group">
+                    <label for="eta" class="form-label">ETA <span class="text-gray-400 dark:text-gray-500 text-[10px] font-normal">(Est. Arrival)</span></label>
+                    <input type="date" id="eta" name="eta" class="form-input">
+                </div>
 
-            <div class="form-group">
-                <label for="eta" class="block text-sm font-medium">ETA:</label>
-                <input type="date" id="eta" name="eta"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-            </div>
+                <div class="form-group">
+                    <label for="ata" class="form-label">ATA <span class="text-gray-400 dark:text-gray-500 text-[10px] font-normal">(Actual Arrival)</span></label>
+                    <input type="date" id="ata" name="ata" class="form-input">
+                </div>
 
-            <div class="form-group">
-                <label for="ata" class="block text-sm font-medium">ATA:</label>
-                <input type="date" id="ata" name="ata"
-                       class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-            </div>
+                <!-- ── Logistics ───────────────────────────────────── -->
+                <div class="col-span-1 sm:col-span-2 lg:col-span-3 form-section-label">Logistics</div>
 
-            <div class="form-group">
-                <label for="transit_status" class="block text-sm font-medium">Transit Status:</label>
-                <select id="transit_status" name="transit_status" required
-                        class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-                    <option value="in process">In Process</option>
-                    <option value="en route">En Route</option>
-                    <option value="arrived">Arrived</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="terms_of_delivery" class="form-label">Terms of Delivery <span class="req-star">*</span></label>
+                    <input type="text" id="terms_of_delivery" name="terms_of_delivery" required list="incoterm-options" class="form-input" placeholder="Incoterm" value="FOB">
+                    <datalist id="incoterm-options">
+                        <option value="EXW"><option value="FCA"><option value="CPT"><option value="CIP">
+                        <option value="DAP"><option value="DPU"><option value="DDP"><option value="FAS">
+                        <option value="FOB"><option value="CFR"><option value="CIF">
+                    </datalist>
+                </div>
 
-            <div class="form-group">
-                <label for="transport" class="block text-sm font-medium">Transport:</label>
-                <select id="transport" name="transport" required
-                        class="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200">
-                    <option value="sea">Sea</option>
-                    <option value="air">Air</option>
-                    <option value="truck">Truck</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="transit_status" class="form-label">Transit Status <span class="req-star">*</span></label>
+                    <select id="transit_status" name="transit_status" required class="form-input">
+                        <option value="in process">In Process</option>
+                        <option value="en route">En Route</option>
+                        <option value="arrived">Arrived</option>
+                    </select>
+                </div>
 
-            <div class="form-group col-span-1 sm:col-span-2 lg:col-span-3">
-                <button type="submit"
-                        class="w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600">
-                    Add Order
-                </button>
-            </div>
-        </form>
+                <div class="form-group">
+                    <label for="transport" class="form-label">Transport <span class="req-star">*</span></label>
+                    <select id="transport" name="transport" required class="form-input">
+                        <option value="sea">Sea</option>
+                        <option value="air">Air</option>
+                        <option value="truck">Truck</option>
+                    </select>
+                </div>
 
-        <!-- datalist for order numbers (kept outside the form to avoid reflow) -->
-        <datalist id="orderno-options">
-            <option value="PO-2025-001">
-            <option value="PO-2025-002">
-            <option value="PO-2025-003">
-            <option value="PO-2025-010">
-            <option value="PO-2025-011">
-            <option value="PO-2025-012">
-        </datalist>
+                <!-- ── Footer buttons ─────────────────────────────── -->
+                <div class="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-gray-700 mt-1">
+                    <button type="submit" id="add-order-submit"
+                            class="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-md shadow-sm transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Add Order</span>
+                    </button>
+                    <button type="button" id="cancel-add-order"
+                            class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 text-sm font-semibold rounded-md transition-colors duration-150">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                        <span>Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -420,39 +416,6 @@
         });
     </script>
 
-    <!-- DEMO helpers: clear pre-filled inputs + generate a fresh Order # on focus -->
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const form = document.getElementById("add-order-form");
-            if (!form) return;
-
-            // Clear visible inputs and prevent browser autofill
-            form.querySelectorAll("input, select, textarea").forEach(el => {
-                el.setAttribute("autocomplete", "off");
-                if (["text", "number", "date", "search", "email", "tel"].includes(el.type || "")) {
-                    el.value = "";
-                }
-            });
-
-            // Default incoterm suggestion
-            const incoterm = document.getElementById("terms_of_delivery");
-            if (incoterm && !incoterm.value) incoterm.value = "FOB";
-
-            // Auto-generate an Order # when the field is focused and empty
-            const orderInput = document.getElementById("order_number");
-            function nextOrderNumber() {
-                const yyyy = new Date().getFullYear();
-                const n = Number(localStorage.getItem("demo_po_counter") || "100") + 1;
-                localStorage.setItem("demo_po_counter", String(n));
-                return `PO-${yyyy}-${String(n).padStart(3,"0")}`;
-            }
-            if (orderInput) {
-                orderInput.addEventListener("focus", () => {
-                    if (!orderInput.value) orderInput.value = nextOrderNumber();
-                });
-            }
-        });
-    </script>
 
 </body>
 </html>
