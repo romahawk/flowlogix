@@ -147,8 +147,8 @@ def _seed_in_context() -> int:
 def demo_seed():
     if not current_app.config.get("DEMO_MODE"):
         return jsonify({"error": "Not in demo mode"}), 403
-    if Order.query.count() > 0:
-        return jsonify({"status": "skipped", "reason": "orders already present"})
+    Order.query.delete()
+    db.session.commit()
     n = _seed_in_context()
     return jsonify({"status": "seeded", "count": n})
 

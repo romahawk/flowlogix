@@ -378,7 +378,9 @@ function sortData(data, key, forceDescending = false) {
   document.querySelectorAll("th[data-sort]").forEach((th) => {
     const thKey = th.getAttribute("data-sort");
     const indicator = th.querySelector(".sort-indicator");
-    if (indicator) indicator.textContent = thKey === key ? (direction === "asc" ? "^" : "v") : "";
+    const isActive = thKey === key;
+    if (indicator) indicator.textContent = isActive ? (direction === "asc" ? "↑" : "↓") : "";
+    th.classList.toggle("th-sort-active", isActive);
   });
 
   return [...data].sort((a, b) => {
@@ -632,21 +634,29 @@ document.addEventListener("DOMContentLoaded", function () {
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.ata || ""}</td>
         <td class="px-2 py-1 whitespace-nowrap">${statusBadge(order.transit_status)}</td>
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${transportIcon}</td>
-        <td class="px-2 py-2 text-center text-xs sm:text-sm">
-          <div class="flex flex-col sm:flex-row sm:justify-center gap-1 sm:gap-2">
+        <td class="px-2 py-1 text-center">
+          <div class="flex items-center justify-center gap-0.5">
             ${
               window.currentUserRole !== "superuser"
                 ? `
-              <button type="button" class="edit-order text-blue-600 hover:text-blue-800" data-id="${order.id}" title="Edit Order"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-              <button type="button" class="delete-order text-red-600 hover:text-red-800" data-id="${order.id}" title="Delete Order"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <button type="button" class="edit-order action-icon-btn hover:text-blue-400 hover:bg-blue-400/10" data-id="${order.id}" title="Edit">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+              </button>
+              <button type="button" class="delete-order action-icon-btn hover:text-red-400 hover:bg-red-400/10" data-id="${order.id}" title="Delete">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
               ${
                 order.transit_status === "arrived"
                   ? `
-                <form method="POST" action="/stock_order/${order.id}">
-                  <button type="submit" class="text-yellow-600 hover:text-yellow-800" title="Move to Warehouse"><i data-lucide="warehouse" class="w-4 h-4"></i></button>
+                <form method="POST" action="/stock_order/${order.id}" style="display:contents">
+                  <button type="submit" class="action-icon-btn hover:text-amber-400 hover:bg-amber-400/10" title="Move to Warehouse">
+                    <i data-lucide="warehouse" class="w-3.5 h-3.5"></i>
+                  </button>
                 </form>
-                <form method="POST" action="/deliver_direct/${order.id}">
-                  <button type="submit" class="text-green-600 hover:text-green-800" title="Mark as Delivered"><i data-lucide="truck" class="w-4 h-4"></i></button>
+                <form method="POST" action="/deliver_direct/${order.id}" style="display:contents">
+                  <button type="submit" class="action-icon-btn hover:text-emerald-400 hover:bg-emerald-400/10" title="Mark as Delivered">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                  </button>
                 </form>
                 `
                   : ""
