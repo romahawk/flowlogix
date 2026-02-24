@@ -133,17 +133,19 @@
 
         window.demoAction = async function (action) {
           menu.classList.add("hidden");
-          const labels = { seed: "Seed orders", reset: "Reset demo data", clear: "Clear ALL orders" };
-          if (action === "reset" || action === "clear") {
-            if (!confirm(`${labels[action]}?\n\nThis cannot be undone.`)) return;
-          }
+          const labels = {
+            seed:  "Load demo orders (clears existing data)",
+            reset: "Reset demo data (clears and reloads)",
+            clear: "Clear ALL orders"
+          };
+          if (!confirm(`${labels[action]}?\n\nThis cannot be undone.`)) return;
           try {
             const r = await fetch(`/demo/${action}`, { method: "POST", credentials: "same-origin" });
             const j = await r.json();
             if (!r.ok) { alert(j.error || "Error"); return; }
-            const msg = action === "seed"  ? `Seeded ${j.count} orders.` :
-                        action === "reset" ? `Reset: removed ${j.deleted}, added ${j.seeded} orders.` :
-                                            `Cleared ${j.deleted} orders.`;
+            const msg = action === "clear"
+              ? `Cleared ${j.deleted} orders.`
+              : `Done: ${j.count ?? j.seeded} orders loaded.`;
             alert(msg);
             window.location.reload();
           } catch (e) {
