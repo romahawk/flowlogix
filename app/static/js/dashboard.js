@@ -1012,7 +1012,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* ---------- legend toggle ---------- */
-  document.querySelectorAll(".legend-item").forEach((item) => {
+  document.querySelectorAll(".legend-item[data-status]").forEach((item) => {
     item.addEventListener("click", () => {
       const status = item.getAttribute("data-status");
       if (visibleStatuses.includes(status)) {

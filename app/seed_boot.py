@@ -60,18 +60,22 @@ def _enforce_timeline_rules(etd_s, eta_s, ata_s) -> Tuple[str, str, Optional[str
     if ata and eta and ata < eta:
         ata = eta  # clamp ATA to ETA
 
-    # 3) Compute status using "milestone date" = ATA if exists else ETA
-    milestone = ata or eta
-    if milestone and milestone < wk_start:
+    # 3) Compute transit_status.
+    #    "arrived" requires an actual ATA — an overdue order (ETA past, no ATA)
+    #    is still en route and must NOT be marked arrived.
+    if ata and ata < wk_start:
         status = "arrived"
+    elif not ata and eta and eta < today:
+        # ETA already passed but no ATA → actively overdue, still en route
+        status = "en route"
     elif etd and (etd > wk_end) and eta and (eta > wk_end):
         status = "in process"
     elif etd and (etd < wk_start) and eta and (eta > wk_end):
         status = "en route"
     else:
         # fallback heuristics around this/near weeks
-        if milestone and wk_start <= milestone <= wk_end:
-            status = "en route"
+        if ata and wk_start <= ata <= wk_end:
+            status = "arrived"
         elif eta and eta > wk_end:
             status = "in process"
         elif etd and etd < wk_start:
