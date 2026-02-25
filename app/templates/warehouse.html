@@ -18,6 +18,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- TomSelect -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 </head>
 
@@ -40,8 +43,8 @@
                     <input type="text" name="order_number" placeholder="e.g. PO-2026-001" required class="form-input">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Product Name <span class="req-star">*</span></label>
-                    <input type="text" name="product_name" placeholder="Product name" required class="form-input">
+                    <label for="wh-product-name" class="form-label">Product <span class="req-star">*</span></label>
+                    <select id="wh-product-name" name="product_name" placeholder="Select or type a product" class="form-input" required></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Quantity <span class="req-star">*</span></label>
@@ -357,6 +360,28 @@
 
         // Render lucide icons — called directly (DOM is already parsed at this point)
         lucide.createIcons();
+
+        // Product select — TomSelect with /api/products
+        (function () {
+            const selectEl = document.getElementById('wh-product-name');
+            if (!selectEl) return;
+            fetch('/api/products')
+                .then(res => res.json())
+                .then(products => {
+                    products.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p;
+                        opt.textContent = p;
+                        selectEl.appendChild(opt);
+                    });
+                    new TomSelect(selectEl, {
+                        create: true,
+                        sortField: { field: 'text', direction: 'asc' },
+                        maxOptions: 200,
+                    });
+                })
+                .catch(err => console.error('products load error:', err));
+        })();
 
         document.querySelectorAll('.open-stockreport-modal').forEach(button => {
             button.addEventListener('click', async () => {
