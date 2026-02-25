@@ -298,8 +298,8 @@ function renderTimeline(data, keepPage = false) {
     return;
   }
 
-  const heightPerOrder = 52;
-  const headerHeight = 58;
+  const heightPerOrder = 46;
+  const headerHeight = 50;
   const canvasHeight = chartData.length * heightPerOrder + headerHeight;
 
   // Chart.js (responsive=true, maintainAspectRatio=false) sizes the canvas by
@@ -382,7 +382,7 @@ function renderTimeline(data, keepPage = false) {
           ticks: {
             callback: (_, i) => labels[i],
             color: colors.text,
-            font: { size: 14, weight: "500", lineHeight: 1.45 },
+            font: { size: 12, weight: "500", lineHeight: 1.3 },
             autoSkip: false,
             padding: 5,
           },
