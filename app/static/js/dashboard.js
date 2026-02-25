@@ -298,6 +298,10 @@ function renderTimeline(data, keepPage = false) {
     return;
   }
 
+  const heightPerOrder = 52;
+  const headerHeight = 58;
+  const canvasHeight = chartData.length * heightPerOrder + headerHeight;
+
   // Chart.js (responsive=true, maintainAspectRatio=false) sizes the canvas by
   // reading canvas.parentNode.clientHeight — NOT canvas.style.height.
   // We wrap the canvas in an explicit-height div so Chart.js reads the right value.
@@ -309,15 +313,7 @@ function renderTimeline(data, keepPage = false) {
     canvas.parentNode.insertBefore(canvasWrapper, canvas);
     canvasWrapper.appendChild(canvas);
   }
-
-  // Fit chart to remaining viewport: measure top of the chart container,
-  // subtract pagination bar height + a small bottom gap.
-  const chartContainer = canvasWrapper.parentElement;
-  const chartTop = chartContainer.getBoundingClientRect().top;
-  const paginationEl = document.querySelector(".flex.items-center.justify-between.mt-3");
-  const paginationH = paginationEl ? paginationEl.offsetHeight + 12 : 52;
-  const available = window.innerHeight - chartTop - paginationH - 8;
-  const canvasHeight = Math.max(280, available);
+  canvasWrapper.style.height = `${canvasHeight}px`;
 
   // Outer container: no scroll — pagination keeps rows ≤ TL_PAGE_SIZE
   const timelineContainer = canvasWrapper.parentElement;
