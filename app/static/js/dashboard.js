@@ -24,6 +24,7 @@ let tlPage = 1;
 const TL_PAGE_SIZE = 10;
 let tlSortKey = "etd";    // "etd" | "product_name"
 let tlSortDir = "asc";
+let flashInterval = null;  // drives delayed-bar border animation
 
 function ensureTimelineWeekHeader() {
   const track = document.getElementById("timeline-week-track");
@@ -250,6 +251,8 @@ function renderTimeline(data, keepPage = false) {
   const chartData = [];
   const labels = [];
   let displayIndex = 0;
+  const todayTs = new Date();
+  todayTs.setHours(0, 0, 0, 0);
 
   data.forEach((order) => {
     const startDate = parseDate(order.etd);
@@ -272,12 +275,15 @@ function renderTimeline(data, keepPage = false) {
         arrived: "rgba(144, 238, 144, 0.8)",
       }[status] || "rgba(128, 128, 128, 0.8)";
 
+    const etaDate = parseDate(order.eta);
+    const isDelayed = !order.ata && etaDate !== null && etaDate < todayTs;
     chartData.push({
       x: [clippedStartDate, clippedEndDate],
       y: displayIndex,
       backgroundColor: color,
       borderColor: color.replace("0.8", "1"),
       borderWidth: 1,
+      isDelayed,
     });
 
     const transportIconLabel = {
@@ -331,6 +337,7 @@ function renderTimeline(data, keepPage = false) {
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
   const ctx = canvas.getContext("2d");
+  if (flashInterval) { clearInterval(flashInterval); flashInterval = null; }
   if (chartInstance) chartInstance.destroy();
 
   const colors = getChartColors();
@@ -426,6 +433,14 @@ function renderTimeline(data, keepPage = false) {
     },
   });
   requestAnimationFrame(() => syncTimelineWeekHeader(chartInstance));
+
+  // Trigger redraws so the flashing border animates
+  const hasDelayed = chartData.some((d) => d.isDelayed);
+  if (hasDelayed) {
+    flashInterval = setInterval(() => {
+      if (chartInstance) chartInstance.draw();
+    }, 600);
+  }
 }
 
 /* -------------------- sorting -------------------- */
@@ -470,6 +485,33 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   Chart.register(window["chartjs-plugin-annotation"]);
+
+  // Custom plugin: flashing red border on delayed bars
+  Chart.register({
+    id: "delayedBorderFlash",
+    afterDraw(chart) {
+      const meta = chart.getDatasetMeta(0);
+      const data = chart.data.datasets[0].data;
+      const ctx2 = chart.ctx;
+      const on = Math.floor(Date.now() / 600) % 2 === 0;
+      if (!on) return;
+      ctx2.save();
+      data.forEach((item, i) => {
+        if (!item.isDelayed) return;
+        const bar = meta.data[i];
+        if (!bar) return;
+        const { x, y, width, height, base } = bar.getProps(["x", "y", "width", "height", "base"], true);
+        const barX = Math.min(x, base);
+        const barW = Math.abs(width ?? (x - base));
+        const barH = Math.abs(height);
+        const barY = y - barH / 2;
+        ctx2.strokeStyle = "rgba(220, 38, 38, 0.9)";
+        ctx2.lineWidth = 2.5;
+        ctx2.strokeRect(barX, barY, barW, barH);
+      });
+      ctx2.restore();
+    },
+  });
   initDarkModeToggle();
 
   /* ---------- products select (TomSelect) ---------- */
