@@ -25,6 +25,7 @@ const TL_PAGE_SIZE = 10;
 let tlSortKey = "etd";    // "etd" | "product_name"
 let tlSortDir = "asc";
 let flashInterval = null;  // drives delayed-bar border animation
+let showDelayedFlash = true; // user-togglable overdue alert highlight
 
 function ensureTimelineWeekHeader() {
   const track = document.getElementById("timeline-week-track");
@@ -276,14 +277,23 @@ function renderTimeline(data, keepPage = false) {
       }[status] || "rgba(128, 128, 128, 0.8)";
 
     const etaDate = parseDate(order.eta);
-    const isDelayed = !order.ata && etaDate !== null && etaDate < todayTs;
+    const ataDate = parseDate(order.ata);
+    // Actively overdue: in transit, ETA already passed
+    const isActivelyDelayed = !order.ata && etaDate !== null && etaDate < todayTs;
+    // Arrived late: has an ATA that came after the ETA
+    const isLateDelivered = ataDate !== null && etaDate !== null && ataDate > etaDate;
+
+    const bgColor = isLateDelivered ? "rgba(252, 165, 165, 0.75)" : color;
+    const bdColor = isLateDelivered ? "rgba(239, 68, 68, 1)" : color.replace("0.8", "1");
+
     chartData.push({
       x: [clippedStartDate, clippedEndDate],
       y: displayIndex,
-      backgroundColor: color,
-      borderColor: color.replace("0.8", "1"),
+      backgroundColor: bgColor,
+      borderColor: bdColor,
       borderWidth: 1,
-      isDelayed,
+      isActivelyDelayed,
+      isLateDelivered,
     });
 
     const transportIconLabel = {
@@ -435,12 +445,30 @@ function renderTimeline(data, keepPage = false) {
   requestAnimationFrame(() => syncTimelineWeekHeader(chartInstance));
 
   // Trigger redraws so the flashing border animates
-  const hasDelayed = chartData.some((d) => d.isDelayed);
-  if (hasDelayed) {
+  const hasActivelyDelayed = chartData.some((d) => d.isActivelyDelayed);
+  updateDelayToggleBtn(hasActivelyDelayed);
+  if (hasActivelyDelayed) {
     flashInterval = setInterval(() => {
       if (chartInstance) chartInstance.draw();
-    }, 600);
+    }, 900);
   }
+}
+
+function updateDelayToggleBtn(hasOverdue) {
+  const btn = document.getElementById("tl-delay-toggle");
+  if (!btn) return;
+  btn.style.display = hasOverdue ? "" : "none";
+  btn.classList.toggle("border-red-400", showDelayedFlash);
+  btn.classList.toggle("text-red-600", showDelayedFlash);
+  btn.classList.toggle("dark:text-red-400", showDelayedFlash);
+  btn.classList.toggle("bg-red-50", showDelayedFlash);
+  btn.classList.toggle("dark:bg-red-900/20", showDelayedFlash);
+  btn.classList.toggle("border-gray-300", !showDelayedFlash);
+  btn.classList.toggle("dark:border-gray-600", !showDelayedFlash);
+  btn.classList.toggle("text-gray-400", !showDelayedFlash);
+  btn.classList.toggle("dark:text-gray-500", !showDelayedFlash);
+  const dot = btn.querySelector(".delay-dot");
+  if (dot) dot.classList.toggle("opacity-30", !showDelayedFlash);
 }
 
 /* -------------------- sorting -------------------- */
@@ -486,18 +514,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   Chart.register(window["chartjs-plugin-annotation"]);
 
-  // Custom plugin: flashing red border on delayed bars
+  // Custom plugin: flashing red border on actively-overdue bars
   Chart.register({
     id: "delayedBorderFlash",
     afterDraw(chart) {
+      if (!showDelayedFlash) return;
       const meta = chart.getDatasetMeta(0);
       const data = chart.data.datasets[0].data;
       const ctx2 = chart.ctx;
-      const on = Math.floor(Date.now() / 600) % 2 === 0;
+      const on = Math.floor(Date.now() / 900) % 2 === 0;
       if (!on) return;
       ctx2.save();
       data.forEach((item, i) => {
-        if (!item.isDelayed) return;
+        if (!item.isActivelyDelayed) return;
         const bar = meta.data[i];
         if (!bar) return;
         const { x, y, width, height, base } = bar.getProps(["x", "y", "width", "height", "base"], true);
@@ -723,6 +752,12 @@ document.addEventListener("DOMContentLoaded", function () {
     tlData = sortTlData(tlData);
     tlPage = 1;
     renderTimeline(null, true);
+  });
+
+  document.getElementById("tl-delay-toggle")?.addEventListener("click", () => {
+    showDelayedFlash = !showDelayedFlash;
+    updateDelayToggleBtn(true);
+    if (chartInstance) chartInstance.draw();
   });
 
   const firstPageBtn = document.getElementById("orders-first-page");
