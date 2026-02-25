@@ -134,23 +134,17 @@
 
         window.demoAction = async function (action) {
           menu.classList.add("hidden");
-          const labels = {
-            seed:  "Load demo orders (clears existing data)",
-            reset: "Reset demo data (clears and reloads)",
-            clear: "Clear ALL orders"
-          };
-          if (!confirm(`${labels[action]}?\n\nThis cannot be undone.`)) return;
           try {
             const r = await fetch(`/demo/${action}`, { method: "POST", credentials: "same-origin" });
             const j = await r.json();
-            if (!r.ok) { alert(j.error || "Error"); return; }
+            if (!r.ok) { window.showToast(j.error || "Error", "error"); return; }
             const msg = action === "clear"
-              ? `Cleared ${j.deleted} orders.`
-              : `Done: ${j.count ?? j.seeded} orders loaded.`;
-            alert(msg);
-            window.location.reload();
+              ? `Cleared all orders.`
+              : `Demo data loaded — ${j.count ?? j.seeded} orders.`;
+            window.showToast(msg);
+            setTimeout(() => window.location.reload(), 800);
           } catch (e) {
-            alert("Request failed: " + e.message);
+            window.showToast("Request failed: " + e.message, "error");
           }
         };
       })();
@@ -286,6 +280,24 @@
         startTour();
       }
     });
+  </script>
+
+  <!-- Global toast (available on all pages via window.showToast) -->
+  <div id="toast-global"
+    class="fixed bottom-5 right-5 z-[200] hidden max-w-xs px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium pointer-events-none"></div>
+  <script>
+    window.showToast = function (msg, type) {
+      const el = document.getElementById("toast-global");
+      if (!el) return;
+      el.textContent = msg;
+      el.className = [
+        "fixed bottom-5 right-5 z-[200] max-w-xs px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium pointer-events-none",
+        type === "error" ? "bg-red-600 text-white" : "bg-gray-800 text-white"
+      ].join(" ");
+      el.classList.remove("hidden");
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.add("hidden"), 3200);
+    };
   </script>
 
   <script src="https://unpkg.com/lucide@latest"></script>

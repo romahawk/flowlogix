@@ -27,6 +27,39 @@ let tlSortDir = "asc";
 let flashInterval = null;  // drives delayed-bar border animation
 let showDelayedFlash = true; // user-togglable overdue alert highlight
 
+/* ---- UI helpers ---- */
+function showToast(msg, type) {
+  if (window.showToast && window.showToast !== showToast) return window.showToast(msg, type);
+  // fallback if navbar toast unavailable
+  const el = document.getElementById("toast-global");
+  if (!el) return;
+  el.textContent = msg;
+  el.className = [
+    "fixed bottom-5 right-5 z-[200] max-w-xs px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium pointer-events-none",
+    type === "error" ? "bg-red-600 text-white" : "bg-gray-800 text-white"
+  ].join(" ");
+  el.classList.remove("hidden");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add("hidden"), 3200);
+}
+
+function showConfirm(msg, onConfirm) {
+  const modal = document.getElementById("confirm-modal");
+  if (!modal) { if (confirm(msg)) onConfirm(); return; }
+  document.getElementById("confirm-msg").textContent = msg;
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+  function cleanup() {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+    document.getElementById("confirm-ok").removeEventListener("click", handleOk);
+    document.getElementById("confirm-cancel").removeEventListener("click", cleanup);
+  }
+  function handleOk() { cleanup(); onConfirm(); }
+  document.getElementById("confirm-ok").addEventListener("click", handleOk);
+  document.getElementById("confirm-cancel").addEventListener("click", cleanup);
+}
+
 function ensureTimelineWeekHeader() {
   const track = document.getElementById("timeline-week-track");
   if (!track || track.childElementCount > 0) return;
@@ -283,8 +316,10 @@ function renderTimeline(data, keepPage = false) {
     // Arrived late: has an ATA that came after the ETA
     const isLateDelivered = ataDate !== null && etaDate !== null && ataDate > etaDate;
 
-    const bgColor = isLateDelivered ? "rgba(252, 165, 165, 0.75)" : color;
-    const bdColor = isLateDelivered ? "rgba(239, 68, 68, 1)" : color.replace("0.8", "1");
+    // Overdue orders have no ATA → still en route; force blue regardless of DB status
+    const resolvedColor = isActivelyDelayed ? "rgba(0, 123, 255, 0.8)" : color;
+    const bgColor = isLateDelivered ? "rgba(252, 165, 165, 0.75)" : resolvedColor;
+    const bdColor = isLateDelivered ? "rgba(239, 68, 68, 1)" : resolvedColor.replace("0.8", "1");
 
     chartData.push({
       x: [clippedStartDate, clippedEndDate],
@@ -415,7 +450,7 @@ function renderTimeline(data, keepPage = false) {
               const [start, end] = context.raw.x;
               const startDate = new Date(start).toLocaleDateString();
               const endDate = new Date(end).toLocaleDateString();
-              return `Delivery: ${startDate} в†’ ${endDate}`;
+              return `Delivery: ${startDate} \u2192 ${endDate}`;
             },
           },
         },
@@ -1012,7 +1047,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /* ---------- legend toggle ---------- */
-  document.querySelectorAll(".legend-item").forEach((item) => {
+  document.querySelectorAll(".legend-item[data-status]").forEach((item) => {
     item.addEventListener("click", () => {
       const status = item.getAttribute("data-status");
       if (visibleStatuses.includes(status)) {
@@ -1155,23 +1190,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (event.target.classList.contains("delete-order")) {
       event.preventDefault();
-      if (!confirm("Are you sure you want to delete this order?")) return;
-
       const orderId = event.target.getAttribute("data-id");
-      fetch(`/delete_order/${orderId}`, { method: "GET" })
-        .then((r) => r.json())
-        .then(async (data) => {
-          if (data.success) {
-            alert("Order deleted successfully!");
-            await loadOrdersForYear(selectedYear);
-          } else {
-            alert("Error deleting order: " + (data.message || "Unknown error"));
-          }
-        })
-        .catch((err) => {
-          console.error("delete error", err);
-          alert("Error deleting order. Please try again.");
-        });
+      showConfirm("Delete this order? This cannot be undone.", () => {
+        fetch(`/delete_order/${orderId}`, { method: "GET" })
+          .then((r) => r.json())
+          .then(async (data) => {
+            if (data.success) {
+              showToast("Order deleted.");
+              await loadOrdersForYear(selectedYear);
+            } else {
+              showToast("Error deleting order: " + (data.message || "Unknown error"), "error");
+            }
+          })
+          .catch((err) => {
+            console.error("delete error", err);
+            showToast("Error deleting order. Please try again.", "error");
+          });
+      });
     }
   });
 
@@ -1185,9 +1220,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const etd = document.getElementById("edit-etd").value;
       const eta = document.getElementById("edit-eta").value;
 
-      if (isNaN(quantity) || quantity <= 0) return alert("Quantity must be positive.");
-      if (etd && orderDate && orderDate > etd) return alert("Order Date cannot be later than ETD.");
-      if (etd && eta && etd > eta) return alert("ETD cannot be later than ETA.");
+      if (isNaN(quantity) || quantity <= 0) return showToast("Quantity must be positive.", "error");
+      if (etd && orderDate && orderDate > etd) return showToast("Order Date cannot be later than ETD.", "error");
+      if (etd && eta && etd > eta) return showToast("ETD cannot be later than ETA.", "error");
 
       const formData = new FormData(editForm);
       const dateFields = ["order_date","required_delivery","payment_date","etd","eta","ata"];
@@ -1205,17 +1240,17 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((r) => r.json())
         .then(async (data) => {
           if (data.success) {
-            alert("Order updated successfully!");
+            showToast("Order updated.");
             editForm.reset();
             document.getElementById("edit-order-modal").style.display = "none";
             await loadOrdersForYear(selectedYear);
           } else {
-            alert("Error editing order: " + (data.message || "Unknown error"));
+            showToast("Error editing order: " + (data.message || "Unknown error"), "error");
           }
         })
         .catch((err) => {
           console.error("edit error", err);
-          alert("Error editing order. Please try again.");
+          showToast("Error editing order. Please try again.", "error");
         });
     });
   }
@@ -1314,23 +1349,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     document.querySelectorAll(".delete-order").forEach((btn) => {
-      btn.addEventListener("click", async () => {
+      btn.addEventListener("click", () => {
         const orderId = btn.dataset.id;
-        if (confirm("Are you sure you want to delete this order?")) {
+        showConfirm("Delete this order? This cannot be undone.", async () => {
           try {
             const response = await fetch(`/delete_order/${orderId}`, {
               method: "POST",
               headers: { "X-Requested-With": "XMLHttpRequest" },
             });
             if (response.ok) {
+              showToast("Order deleted.");
               await loadOrdersForYear(selectedYear);
             } else {
-              alert("Error deleting order.");
+              showToast("Error deleting order.", "error");
             }
           } catch (err) {
             console.error("Delete failed", err);
+            showToast("Error deleting order.", "error");
           }
-        }
+        });
       });
     });
   }

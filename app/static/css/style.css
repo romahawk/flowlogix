@@ -277,7 +277,7 @@ table td a:hover {
 }
 
 canvas#timelineChart {
-  display: block !important;
+  display: block;
   width: 100% !important;
   /* height is set dynamically by JS — do not override here */
 }
