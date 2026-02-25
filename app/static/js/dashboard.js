@@ -450,7 +450,7 @@ function renderTimeline(data, keepPage = false) {
               const [start, end] = context.raw.x;
               const startDate = new Date(start).toLocaleDateString();
               const endDate = new Date(end).toLocaleDateString();
-              return `Delivery: ${startDate} в†’ ${endDate}`;
+              return `Delivery: ${startDate} \u2192 ${endDate}`;
             },
           },
         },
