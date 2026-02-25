@@ -437,6 +437,52 @@ document.addEventListener("DOMContentLoaded", function () {
   };
   initializeProductSelect();
 
+  /* ---------- KPI cards ---------- */
+  (function loadKpi() {
+    fetch("/api/kpi")
+      .then((r) => r.json())
+      .then((data) => {
+        const cards = [
+          { key: "in_transit", countId: "kpi-transit-count",   deltaId: "kpi-transit-delta"   },
+          { key: "warehouse",  countId: "kpi-warehouse-count", deltaId: "kpi-warehouse-delta"  },
+          { key: "delivered",  countId: "kpi-delivered-count", deltaId: "kpi-delivered-delta"  },
+          { key: "delayed",    countId: "kpi-delayed-count",   deltaId: "kpi-delayed-delta"    },
+        ];
+
+        cards.forEach(({ key, countId, deltaId }) => {
+          const metric = data[key];
+          if (!metric) return;
+
+          const countEl = document.getElementById(countId);
+          const deltaEl = document.getElementById(deltaId);
+          if (countEl) countEl.textContent = metric.count;
+
+          if (!deltaEl) return;
+          const pct = metric.delta_pct;
+          if (pct === null || pct === undefined) {
+            deltaEl.textContent = metric.delta_label || "";
+            deltaEl.className = "text-xs text-gray-400 dark:text-gray-500";
+            return;
+          }
+
+          const isGood = metric.positive_is_good ? pct >= 0 : pct <= 0;
+          const arrow  = pct > 0 ? "↑" : pct < 0 ? "↓" : "→";
+          const sign   = pct > 0 ? "+" : "";
+          const color  = pct === 0
+            ? "text-gray-400 dark:text-gray-500"
+            : isGood
+              ? "text-emerald-500 dark:text-emerald-400"
+              : "text-red-500 dark:text-red-400";
+
+          deltaEl.innerHTML =
+            `<span class="${color} font-medium">${arrow} ${sign}${pct}%</span>` +
+            ` <span class="text-gray-400 dark:text-gray-500">${metric.delta_label}</span>`;
+          deltaEl.className = "text-xs";
+        });
+      })
+      .catch((err) => console.error("kpi load error:", err));
+  })();
+
   /* ---------- YEAR + ORDERS loading via new APIs ---------- */
 
   // 1) Insert years into the dropdown

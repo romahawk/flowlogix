@@ -120,6 +120,107 @@ def add_order():
 # 🔹 Data APIs for dashboard
 # ===========================
 
+@dashboard_bp.get('/api/kpi')
+@login_required
+def api_kpi():
+    """Return KPI counts + month-over-month dynamics for the 4 dashboard cards."""
+    from datetime import date, timedelta
+
+    today = date.today()
+    first_this = today.replace(day=1)
+    first_last = (first_this - timedelta(days=1)).replace(day=1)
+    last_last   = first_this - timedelta(days=1)
+
+    def pd(s):
+        """Parse a stored date string to date or None."""
+        if not s:
+            return None
+        for fmt in ("%d.%m.%y", "%d.%m.%Y", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(s, fmt).date()
+            except ValueError:
+                pass
+        return None
+
+    def pct(curr, prev):
+        if prev == 0:
+            return None
+        return round((curr - prev) / prev * 100)
+
+    def in_range(d, lo, hi):
+        return d is not None and lo <= d <= hi
+
+    q  = Order.query
+    ws = WarehouseStock.query
+    dg = DeliveredGoods.query
+    if not can_view_all(current_user.role):
+        q  = q.filter_by(user_id=current_user.id)
+        ws = ws.filter_by(user_id=current_user.id)
+        dg = dg.filter_by(user_id=current_user.id)
+
+    orders    = q.all()
+    warehouse = ws.filter_by(is_archived=False).all()
+    delivered = dg.all()
+
+    # ── In Transit ──────────────────────────────────────────────────────────
+    transit_total = len(orders)
+    transit_this  = sum(1 for o in orders if in_range(pd(o.order_date), first_this, today))
+    transit_last  = sum(1 for o in orders if in_range(pd(o.order_date), first_last, last_last))
+
+    # ── Warehouse ────────────────────────────────────────────────────────────
+    wh_total = len(warehouse)
+    wh_this  = sum(1 for w in warehouse if in_range(pd(w.ata), first_this, today))
+    wh_last  = sum(1 for w in warehouse if in_range(pd(w.ata), first_last, last_last))
+
+    # ── Delivered ────────────────────────────────────────────────────────────
+    dg_total = len(delivered)
+    dg_this  = sum(1 for d in delivered if in_range(pd(d.delivery_date), first_this, today))
+    dg_last  = sum(1 for d in delivered if in_range(pd(d.delivery_date), first_last, last_last))
+
+    # ── Delayed (ETA passed, no ATA yet) ─────────────────────────────────────
+    def is_delayed(o):
+        eta = pd(o.eta)
+        return eta is not None and eta < today and not o.ata
+
+    delayed_total = sum(1 for o in orders if is_delayed(o))
+    # "became overdue this month" = eta within this month range and still no ata
+    delayed_this  = sum(1 for o in orders
+                        if pd(o.eta) is not None
+                        and in_range(pd(o.eta), first_this, today)
+                        and not o.ata)
+    delayed_last  = sum(1 for o in orders
+                        if pd(o.eta) is not None
+                        and in_range(pd(o.eta), first_last, last_last)
+                        and not o.ata)
+
+    return jsonify({
+        "in_transit": {
+            "count": transit_total,
+            "delta_pct": pct(transit_this, transit_last),
+            "delta_label": "vs last month",
+            "positive_is_good": True,
+        },
+        "warehouse": {
+            "count": wh_total,
+            "delta_pct": pct(wh_this, wh_last),
+            "delta_label": "vs last month",
+            "positive_is_good": True,
+        },
+        "delivered": {
+            "count": dg_total,
+            "delta_pct": pct(dg_this, dg_last),
+            "delta_label": "vs last month",
+            "positive_is_good": True,
+        },
+        "delayed": {
+            "count": delayed_total,
+            "delta_pct": pct(delayed_this, delayed_last),
+            "delta_label": "vs last month",
+            "positive_is_good": False,
+        },
+    })
+
+
 @dashboard_bp.get('/api/years')
 @login_required
 def api_years():
