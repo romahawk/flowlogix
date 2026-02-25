@@ -316,8 +316,10 @@ function renderTimeline(data, keepPage = false) {
     // Arrived late: has an ATA that came after the ETA
     const isLateDelivered = ataDate !== null && etaDate !== null && ataDate > etaDate;
 
-    const bgColor = isLateDelivered ? "rgba(252, 165, 165, 0.75)" : color;
-    const bdColor = isLateDelivered ? "rgba(239, 68, 68, 1)" : color.replace("0.8", "1");
+    // Overdue orders have no ATA → still en route; force blue regardless of DB status
+    const resolvedColor = isActivelyDelayed ? "rgba(0, 123, 255, 0.8)" : color;
+    const bgColor = isLateDelivered ? "rgba(252, 165, 165, 0.75)" : resolvedColor;
+    const bdColor = isLateDelivered ? "rgba(239, 68, 68, 1)" : resolvedColor.replace("0.8", "1");
 
     chartData.push({
       x: [clippedStartDate, clippedEndDate],
