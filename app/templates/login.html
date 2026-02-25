@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Supply Tracker</title>
+    <title>Login - FlowLogix</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -15,9 +15,9 @@
 
             <!-- 🔷 App Logo + Name Header -->
             <div class="flex flex-col items-center mb-10">
-                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Supply Tracker Logo"
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="FlowLogix Logo"
                     class="w-16 h-16 mb-2">
-                <h1 class="text-3xl font-bold text-blue-400 tracking-wide">Supply Tracker</h1>
+                <h1 class="text-3xl font-bold text-blue-400 tracking-wide">FlowLogix</h1>
             </div>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
