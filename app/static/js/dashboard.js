@@ -18,6 +18,13 @@ let currentPage = 1;
 let pageSize = 10;
 const PAGE_SIZE_FIXED = 10;
 
+// Timeline pagination + sort state
+let tlData = [];          // full sorted/filtered set for timeline
+let tlPage = 1;
+const TL_PAGE_SIZE = 10;
+let tlSortKey = "etd";    // "etd" | "product_name"
+let tlSortDir = "asc";
+
 function ensureTimelineWeekHeader() {
   const track = document.getElementById("timeline-week-track");
   if (!track || track.childElementCount > 0) return;
@@ -158,8 +165,63 @@ function filterData(data, query) {
   });
 }
 
+/* -------------------- timeline sort helpers -------------------- */
+function sortTlData(data) {
+  return [...data].sort((a, b) => {
+    let va, vb;
+    if (tlSortKey === "etd") {
+      va = parseDate(a.etd) || new Date(0);
+      vb = parseDate(b.etd) || new Date(0);
+    } else {
+      va = (a.product_name || "").toLowerCase();
+      vb = (b.product_name || "").toLowerCase();
+    }
+    if (va < vb) return tlSortDir === "asc" ? -1 : 1;
+    if (va > vb) return tlSortDir === "asc" ?  1 : -1;
+    return 0;
+  });
+}
+
+function updateTlSortUI() {
+  ["date", "name"].forEach(k => {
+    const arrow = document.getElementById(`tl-sort-${k}-arrow`);
+    const btn   = document.getElementById(`tl-sort-${k}`);
+    if (!arrow || !btn) return;
+    const isActive = (k === "date" && tlSortKey === "etd") || (k === "name" && tlSortKey === "product_name");
+    arrow.textContent = isActive ? (tlSortDir === "asc" ? "↑" : "↓") : "↑";
+    arrow.classList.toggle("opacity-60", !isActive);
+    btn.classList.toggle("border-blue-400", isActive);
+    btn.classList.toggle("text-blue-600", isActive);
+    btn.classList.toggle("dark:text-blue-400", isActive);
+  });
+}
+
+function updateTlPaginationUI() {
+  const totalPages = Math.max(1, Math.ceil(tlData.length / TL_PAGE_SIZE));
+  const info  = document.getElementById("tl-page-info");
+  const prev  = document.getElementById("tl-prev-btn");
+  const next  = document.getElementById("tl-next-btn");
+  if (info) info.textContent = tlData.length > 0 ? `Page ${tlPage} / ${totalPages}  (${tlData.length} orders)` : "";
+  if (prev) prev.disabled = tlPage <= 1;
+  if (next) next.disabled = tlPage >= totalPages;
+  const wrap = document.querySelector(".flex.items-center.justify-between.mt-3");
+  if (wrap) wrap.style.display = tlData.length > TL_PAGE_SIZE ? "" : "none";
+}
+
 /* -------------------- timeline (Chart.js) -------------------- */
-function renderTimeline(data) {
+function renderTimeline(data, keepPage = false) {
+  // Store full sorted set for pagination
+  if (!keepPage) {
+    tlData = sortTlData(Array.isArray(data) ? data : []);
+    tlPage = 1;
+  }
+  updateTlSortUI();
+  updateTlPaginationUI();
+
+  // Slice current page
+  const start = (tlPage - 1) * TL_PAGE_SIZE;
+  const pageData = tlData.slice(start, start + TL_PAGE_SIZE);
+
   const loadingIndicator = document.getElementById("timeline-loading");
   const canvas = document.getElementById("timelineChart");
   const weekHeader = document.getElementById("timeline-week-header");
@@ -170,17 +232,16 @@ function renderTimeline(data) {
   if (weekHeader) weekHeader.classList.add("hidden");
   canvas.style.display = "none";
 
-  if (!Array.isArray(data) || data.length === 0) {
+  if (!Array.isArray(tlData) || tlData.length === 0) {
     if (loadingIndicator) {
-      loadingIndicator.textContent =
-        data.length === 0
-          ? `No orders found for ${selectedYear || "selected year"}`
-          : "Loading...";
+      loadingIndicator.textContent = `No orders found for ${selectedYear || "selected year"}`;
       loadingIndicator.style.display = "block";
     }
+    return;
   }
 
-  if (!Array.isArray(data) || data.length === 0) return;
+  // Use only the current page slice for rendering
+  data = pageData;
 
   const year = parseInt(selectedYear) || new Date().getFullYear();
   const yearStart = new Date(year, 0, 1);
@@ -254,11 +315,11 @@ function renderTimeline(data) {
   }
   canvasWrapper.style.height = `${canvasHeight}px`;
 
-  // Outer container scrolls; wrapper (canvas direct parent) holds the explicit height.
+  // Outer container: no scroll — pagination keeps rows ≤ TL_PAGE_SIZE
   const timelineContainer = canvasWrapper.parentElement;
-  timelineContainer.style.maxHeight = "760px";
-  timelineContainer.style.overflowY = "auto";
-  timelineContainer.style.overflowX = "hidden";
+  timelineContainer.style.maxHeight = "";
+  timelineContainer.style.overflowY = "";
+  timelineContainer.style.overflowX = "";
 
   if (loadingIndicator) loadingIndicator.style.display = "none";
   canvas.style.display = "block";
@@ -581,6 +642,46 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // в†“ This replaced the previous "fetchAndRender" that called /api/orders with no year
   bootstrapYearsAndOrders();
+
+  // Timeline pagination buttons
+  const tlPrevBtn = document.getElementById("tl-prev-btn");
+  const tlNextBtn = document.getElementById("tl-next-btn");
+  if (tlPrevBtn) {
+    tlPrevBtn.addEventListener("click", () => {
+      if (tlPage > 1) { tlPage -= 1; renderTimeline(null, true); }
+    });
+  }
+  if (tlNextBtn) {
+    tlNextBtn.addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(tlData.length / TL_PAGE_SIZE));
+      if (tlPage < totalPages) { tlPage += 1; renderTimeline(null, true); }
+    });
+  }
+
+  // Timeline sort buttons
+  document.getElementById("tl-sort-date")?.addEventListener("click", () => {
+    if (tlSortKey === "etd") {
+      tlSortDir = tlSortDir === "asc" ? "desc" : "asc";
+    } else {
+      tlSortKey = "etd";
+      tlSortDir = "asc";
+    }
+    tlData = sortTlData(tlData);
+    tlPage = 1;
+    renderTimeline(null, true);
+  });
+
+  document.getElementById("tl-sort-name")?.addEventListener("click", () => {
+    if (tlSortKey === "product_name") {
+      tlSortDir = tlSortDir === "asc" ? "desc" : "asc";
+    } else {
+      tlSortKey = "product_name";
+      tlSortDir = "asc";
+    }
+    tlData = sortTlData(tlData);
+    tlPage = 1;
+    renderTimeline(null, true);
+  });
 
   const firstPageBtn = document.getElementById("orders-first-page");
   const prevPageBtn = document.getElementById("orders-prev-page");
