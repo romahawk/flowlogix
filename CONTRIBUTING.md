@@ -9,7 +9,7 @@ functions as proof-of-work — not just a code dump.
 ## Branch Naming
 
 ```
-<type>/<short-description>
+<type>/issue-{N}-<short-description>
 ```
 
 | Type | Use for |
@@ -19,17 +19,21 @@ functions as proof-of-work — not just a code dump.
 | `chore/` | Maintenance, deps, config |
 | `docs/` | Documentation only |
 | `refactor/` | Code restructuring without behavior change |
+| `test/` | Test-only additions |
+| `claude/` | Claude Code automation branches |
 
 Examples:
 ```
-feature/api-v1-auth-login
-fix/timeline-sticky-row-resize
-chore/prune-requirements
-docs/prd-architecture-roadmap
+feature/issue-9-api-auth-login
+fix/issue-22-timeline-sticky-row-resize
+chore/issue-2-prune-requirements
+docs/issue-3-prd-architecture-roadmap
+test/issue-14-smoke-tests
 ```
 
 Rules:
-- Branch from `main` (or `master`).
+- Branch from `main`.
+- Every branch maps to an open GitHub issue (`issue-{N}`).
 - Keep branches short-lived — one issue per branch.
 - Avoid force-push on shared branches.
 
@@ -48,10 +52,13 @@ refactor(js): extract api module from dashboard.js
 test(api): add smoke tests for GET /api/v1/orders
 ```
 
+Valid types: `feat` `fix` `chore` `docs` `refactor` `test`
+
 Rules:
 - Use imperative mood in the description ("add", not "added" or "adds").
 - Keep the subject line under 72 characters.
-- Reference the issue in the body if the commit resolves one: `Closes #12`.
+- **Always** include `Closes #N` in the commit body when resolving an issue.
+- Keep each commit under 200 lines (insertions + deletions). Split larger changes.
 - No emoji in commit messages unless the project standard changes.
 
 ---
@@ -85,13 +92,27 @@ Rules:
 
 ---
 
+## Pre-Commit Gates (Both Must Pass Before Every Commit)
+
+```bash
+ruff check .       # lint — must exit 0
+pytest tests/ -v   # tests — must exit 0
+```
+
+Install if missing: `pip install ruff pytest`
+
+---
+
 ## Definition of Done (per issue)
 
 - [ ] Acceptance criteria from the issue are met
+- [ ] `ruff check .` exits 0
+- [ ] `pytest tests/ -v` exits 0
 - [ ] No regressions in existing manual flows
 - [ ] Demo mode still works (auto-login, read-only guard)
+- [ ] `Closes #N` in commit body or PR body
 - [ ] Relevant docs updated (API contract, ADR, roadmap if scope changed)
-- [ ] Demo artifact attached to PR
+- [ ] Demo artifact attached to PR (screenshot or `pytest` output)
 
 ---
 
@@ -99,7 +120,7 @@ Rules:
 
 1. Review open issues — pick the highest-priority unblocked one.
 2. Create or assign the issue to yourself.
-3. Create a branch: `feature/your-description`.
+3. Create a branch: `feature/issue-{N}-short-description`.
 4. Implement in small, atomic commits.
 5. Open a PR referencing the issue.
 6. Fill the PR template; attach a demo artifact.
@@ -120,7 +141,8 @@ flask db upgrade
 python run.py
 ```
 
-Run smoke tests (once added):
+Run lint and tests:
 ```bash
+ruff check .
 pytest tests/ -v
 ```
