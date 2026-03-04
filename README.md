@@ -10,6 +10,18 @@ sorted, and RBAC-scoped server-side. No spreadsheet required.
 
 ---
 
+## Screenshots
+
+**Orders dashboard** — filterable, sortable, RBAC-scoped table with KPI cards
+
+![Orders dashboard](docs/screenshots/dashboard-orders.png)
+
+**Timeline view** — week-indexed Gantt chart with overdue alerts and status colour coding
+
+![Timeline view](docs/screenshots/dashboard-timeline.png)
+
+---
+
 ## What It Does
 
 - Track orders through their full lifecycle: **Orders → Warehouse → Delivered**
