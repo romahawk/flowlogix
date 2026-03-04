@@ -1,11 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from app.models import db, DeliveredGoods, WarehouseStock, Order, StockReportEntry
 from datetime import datetime
 from app.roles import can_edit, can_view_all
 from app.utils.logging import log_activity
 from sqlalchemy import or_, func, extract
-from app.roles import can_view_all
 
 delivered_bp = Blueprint('delivered', __name__)
 

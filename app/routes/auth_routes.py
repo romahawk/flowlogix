@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import User, db
 
 auth_bp = Blueprint('auth', __name__)
@@ -45,7 +44,6 @@ def login():
             elif User.query.filter_by(username=username).first():
                 flash('Username already taken.', 'danger')
             else:
-                hashed_password = generate_password_hash(password)
                 new_user = User(username=username)
                 new_user.set_password(password)
                 db.session.add(new_user)

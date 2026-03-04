@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from app.models import User, Order, db
-from app.roles import can_view_all
 
 admin_bp = Blueprint('admin', __name__)
 

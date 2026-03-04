@@ -1,0 +1,13 @@
+[tool.ruff]
+exclude = [
+    "migrations/",
+    "utils/",
+    "demo_record.py",
+    ".venv/",
+]
+
+[tool.ruff.lint]
+ignore = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

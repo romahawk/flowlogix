@@ -1,5 +1,5 @@
 # app/seed_boot.py
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 import os
 from typing import Optional, Tuple
 
@@ -29,7 +29,8 @@ def _parse_date(s: Optional[str]) -> Optional[date]:
     return None
 
 def _fmt_date(d: Optional[date]) -> Optional[str]:
-    if not d: return None
+    if not d:
+        return None
     # store as dd.mm.yy (matches your UI)
     return d.strftime("%d.%m.%y")
 
