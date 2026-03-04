@@ -32,21 +32,14 @@ jobs:
           pip install ruff pytest
 
       - name: Lint (ruff)
-        run: ruff check .
-
-      - name: Set up test environment
-        env:
-          FLASK_ENV: testing
-          SECRET_KEY: ci-test-secret-not-real
-          DATABASE_URL: sqlite:///test.db
-          DEMO_MODE: "false"
-        run: |
-          flask db upgrade
+        run: python -m ruff check .
 
       - name: Run tests (pytest)
         env:
           FLASK_ENV: testing
           SECRET_KEY: ci-test-secret-not-real
-          DATABASE_URL: sqlite:///test.db
+          DATABASE_URL: sqlite:///:memory:
           DEMO_MODE: "false"
-        run: pytest tests/ -v --tb=short
+          AUTO_SEED_ON_EMPTY: "false"
+          USE_SEED_BOOT: "false"
+        run: python -m pytest tests/ -v --tb=short

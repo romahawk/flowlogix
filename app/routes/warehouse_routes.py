@@ -336,7 +336,7 @@ def download_stockreport(item_id):
 
     # Lazy import to avoid startup failures on Render Free/Starter
     try:
-        from weasyprint import HTML  # noqa: WPS433
+        from weasyprint import HTML  # noqa: PLC0415
         pdf_content = HTML(string=html_content, base_url=request.url_root).write_pdf()
     except Exception as e:
         # Graceful fallback: inform the user and send them to the on-screen view
@@ -395,7 +395,6 @@ def edit_stockreport(entry_id):
 @login_required
 def delete_stockreport(entry_id):
     entry = StockReportEntry.query.get_or_404(entry_id)
-    item_id = entry.related_order_id
 
     try:
         db.session.delete(entry)
