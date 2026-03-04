@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 PRODUCTS_FILE = Path(__file__).resolve().parents[2] / "data" / "products.txt"

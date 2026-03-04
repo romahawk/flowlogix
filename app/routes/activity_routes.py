@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
-from flask_login import login_required, current_user
-from app.models import ActivityLog, User, db
+from flask_login import login_required
+from app.models import ActivityLog, db
 from app.roles import role_required
 from flask import request, redirect, url_for, flash
 

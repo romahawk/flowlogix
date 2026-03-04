@@ -6,7 +6,6 @@ from app.database import db
 from datetime import datetime, date
 from app.roles import can_view_all
 from app.utils.logging import log_activity
-import os
 
 
 dashboard_bp = Blueprint('dashboard', __name__)

@@ -1,7 +1,5 @@
 # app/routes/_bootstrap.py
 from __future__ import annotations
-from typing import Optional
-from flask import current_app
 
 
 def _already_wired(app) -> bool:
