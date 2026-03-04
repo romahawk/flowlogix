@@ -67,10 +67,8 @@ def delete_user(user_id):
         flash("Admin users cannot be deleted.", "danger")
         return redirect(url_for('admin.user_management'))
 
-    print(f"[DEBUG] Deleting user: {user.username} (ID: {user.id})")
     db.session.delete(user)
     db.session.commit()
-    print("[DEBUG] Commit completed")
 
     flash(f"User {user.username} deleted.", "success")
     return redirect(url_for('admin.user_management'))

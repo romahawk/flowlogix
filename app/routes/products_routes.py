@@ -6,7 +6,6 @@ products_bp = Blueprint('products', __name__)
 @products_bp.route('/api/products', methods=['GET'])
 def get_products():
     products = load_products()
-    print("📦 Loaded products:", products)  # ✅ For debugging
     return jsonify(products)
 
 
