@@ -138,7 +138,7 @@ def create_app():
         _seed_if_empty_once()
 
     # ---------------- Auto-login demo user (never downgrade role) ----------------
-    AUTO_LOGIN_PATHS = {"/", "/login", "/auth/login"}
+    AUTO_LOGIN_PATHS = {"/", "/login", "/auth/login", "/dashboard"}
 
     @app.before_request
     def demo_auto_login():
