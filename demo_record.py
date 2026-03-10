@@ -25,25 +25,22 @@ Flags
 
 import argparse
 import asyncio
+import sys
 from pathlib import Path
 
-# ── Dependency check ─────────────────────────────────────────────────────────
 try:
-    from playwright.async_api import async_playwright, Page
+    from playwright.async_api import async_playwright, Page, TimeoutError as PlaywrightTimeoutError
 except ImportError:
     raise SystemExit(
         "\n[demo_record] 'playwright' is not installed.\n"
         "  Run:  pip install playwright && playwright install chromium\n"
     )
 
-# ── Constants ────────────────────────────────────────────────────────────────
 DEFAULT_URL = "http://127.0.0.1:5000"
-USERNAME    = "demo"
-PASSWORD    = "demo1234"
-VIEWPORT    = {"width": 1440, "height": 900}
+USERNAME = "demo"
+PASSWORD = "demo1234"
+VIEWPORT = {"width": 1440, "height": 900}
 
-
-# ── Helpers ──────────────────────────────────────────────────────────────────
 
 async def wait(ms: int = 1200) -> None:
     await asyncio.sleep(ms / 1000)
@@ -63,42 +60,56 @@ async def scroll_into_view(page: Page, selector: str) -> None:
 
 
 async def banner(msg: str) -> None:
-    print(f"\n  ▶  {msg}")
+    print(f"\n  ->  {msg}")
 
 
-# ── Scene helpers ─────────────────────────────────────────────────────────────
+async def dismiss_tour_modal(page: Page) -> None:
+    """Close onboarding modal if visible and suppress it for this browser context."""
+    await page.evaluate("localStorage.setItem('tourCompleted', 'true')")
+    close_btn = page.locator("#closeTourBtn")
+    if await close_btn.count() > 0 and await close_btn.is_visible():
+        await close_btn.click()
+        await wait(300)
+
 
 async def scene_login(page: Page, base_url: str) -> None:
     await banner("LOGIN PAGE")
     await page.goto(f"{base_url}/login")
     await wait(1000)
 
-    # Clear any pre-filled values then type slowly for camera effect
-    await page.fill('input[name="username"]', "")
-    await slow_type(page, 'input[name="username"]', USERNAME)
-    await wait(400)
+    # Support both flows:
+    # 1) classic login form
+    # 2) demo auto-login that redirects straight to /dashboard
+    try:
+        await page.wait_for_selector('input[name="username"]', timeout=3500)
+        await page.fill('input[name="username"]', "")
+        await slow_type(page, 'input[name="username"]', USERNAME)
+        await wait(400)
 
-    await page.fill('input[name="password"]', "")
-    await slow_type(page, 'input[name="password"]', PASSWORD)
-    await wait(700)
+        await page.fill('input[name="password"]', "")
+        await slow_type(page, 'input[name="password"]', PASSWORD)
+        await wait(700)
 
-    await page.click('button[type="submit"]')
-    await page.wait_for_url(f"{base_url}/dashboard**", timeout=12_000)
+        await page.click('button[type="submit"]')
+        await page.wait_for_url(f"{base_url}/dashboard**", timeout=12_000)
+    except PlaywrightTimeoutError:
+        await page.goto(f"{base_url}/dashboard")
+        await page.wait_for_url(f"{base_url}/dashboard**", timeout=12_000)
+
+    await dismiss_tour_modal(page)
     await wait(1800)
 
 
 async def scene_orders_tab(page: Page) -> None:
-    await banner("YOUR ORDERS TAB  – colour-coded statuses")
+    await banner("YOUR ORDERS TAB - colour-coded statuses")
+    await dismiss_tour_modal(page)
 
-    # Ensure we are on the orders tab
     await page.click("#tab-orders")
     await wait(800)
 
-    # Scroll the table into view
     await scroll_into_view(page, "#orders-table-container")
     await wait(1200)
 
-    # Hover over the first few rows so the user can see the row highlight
     rows = await page.locator("#orders-table-container tbody tr").all()
     for row in rows[:5]:
         await row.hover()
@@ -108,20 +119,19 @@ async def scene_orders_tab(page: Page) -> None:
 
 
 async def scene_timeline_tab(page: Page) -> None:
-    await banner("TIMELINE TAB – Gantt-style chart")
+    await banner("TIMELINE TAB - Gantt-style chart")
+    await dismiss_tour_modal(page)
 
     await page.click("#tab-timeline")
     await wait(1500)
 
-    # Scroll chart into view
     canvas_locator = page.locator("#timelineChart")
     await canvas_locator.scroll_into_view_if_needed()
     await wait(1200)
 
-    # Sweep cursor across the chart to trigger tooltips
     canvas = await canvas_locator.bounding_box()
     if canvas:
-        await banner("  Sweeping cursor to show tooltips…")
+        await banner("  Sweeping cursor to show tooltips...")
         cx, cy = canvas["x"], canvas["y"]
         cw, ch = canvas["width"], canvas["height"]
 
@@ -129,37 +139,32 @@ async def scene_timeline_tab(page: Page) -> None:
             await page.mouse.move(cx + cw * x_frac, cy + ch * y_frac)
             await wait(900)
 
-        # Park cursor off the chart
         await page.mouse.move(cx - 40, cy)
 
     await wait(1200)
 
 
 async def scene_add_order(page: Page) -> None:
-    await banner("ADD ORDER FORM – opening & filling in a new order")
+    await banner("ADD ORDER FORM - opening & filling in a new order")
+    await dismiss_tour_modal(page)
 
-    # Navigate back to orders tab first
     await page.click("#tab-orders")
     await wait(600)
 
-    # Click the green "New Order" button in the navbar
     toggle_btn = page.locator(".toggle-form-btn").first
     await toggle_btn.scroll_into_view_if_needed()
     await toggle_btn.click()
     await wait(1000)
 
-    # Scroll form into view
     await scroll_into_view(page, "#add-order-section")
     await wait(600)
 
-    # ── Order Identity ────────────────────────────────────────────────
     await page.fill("#order_date", "2026-04-01")
     await wait(300)
 
     await slow_type(page, "#order_number", "PO-2026-099", delay=60)
     await wait(400)
 
-    # product_name is a TomSelect – click the control wrapper, type, then pick
     ts_control = page.locator("#product_name + .ts-wrapper .ts-control")
     await ts_control.click()
     await wait(300)
@@ -169,27 +174,22 @@ async def scene_add_order(page: Page) -> None:
     if await first_option.is_visible():
         await first_option.click()
     else:
-        # Fallback: just press Enter to accept typed text
         await page.keyboard.press("Escape")
     await wait(400)
 
-    # ── Parties & Quantity ────────────────────────────────────────────
     await slow_type(page, 'input[name="buyer"]', "City Hospital", delay=55)
     await wait(300)
 
     await page.fill('input[name="quantity"]', "500")
     await wait(300)
 
-    # ── Schedule ──────────────────────────────────────────────────────
     await page.fill("#etd", "2026-04-10")
     await wait(300)
     await page.fill('input[name="eta"]', "2026-05-20")
     await wait(600)
 
-    # Pause so the viewer can read the filled form
     await wait(1800)
 
-    # Close form without submitting (demo only – we don't want to add real data)
     close_btn = page.locator("#close-add-order")
     if await close_btn.is_visible():
         await close_btn.click()
@@ -204,11 +204,9 @@ async def scene_dark_mode(page: Page) -> None:
     dark_btn = page.locator("#dark-mode-toggle")
     await dark_btn.scroll_into_view_if_needed()
 
-    # Switch to dark
     await dark_btn.click()
     await wait(1800)
 
-    # Switch back to light
     await dark_btn.click()
     await wait(1200)
 
@@ -217,7 +215,6 @@ async def scene_warehouse(page: Page, base_url: str) -> None:
     await banner("WAREHOUSE PAGE")
     await page.goto(f"{base_url}/warehouse")
     await wait(2000)
-    # Scroll down to show the table
     await page.mouse.wheel(0, 400)
     await wait(1500)
 
@@ -229,8 +226,6 @@ async def scene_delivered(page: Page, base_url: str) -> None:
     await page.mouse.wheel(0, 300)
     await wait(1500)
 
-
-# ── Main ─────────────────────────────────────────────────────────────────────
 
 async def record_demo(base_url: str, output_dir: Path, headless: bool) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -245,12 +240,10 @@ async def record_demo(base_url: str, output_dir: Path, headless: bool) -> None:
             viewport=VIEWPORT,
             record_video_dir=str(output_dir),
             record_video_size=VIEWPORT,
-            # Smooth scrolling
             java_script_enabled=True,
         )
         page = await ctx.new_page()
 
-        # ── Run all scenes ────────────────────────────────────────────
         await scene_login(page, base_url)
         await scene_orders_tab(page)
         await scene_timeline_tab(page)
@@ -259,31 +252,36 @@ async def record_demo(base_url: str, output_dir: Path, headless: bool) -> None:
         await scene_warehouse(page, base_url)
         await scene_delivered(page, base_url)
 
-        # ── Final pause & screenshot ──────────────────────────────────
-        await banner("Saving screenshot thumbnail…")
+        await banner("Saving screenshot thumbnail...")
         await page.goto(f"{base_url}/dashboard")
         await wait(1500)
         screenshot_path = output_dir / "thumbnail.png"
         await page.screenshot(path=str(screenshot_path), full_page=False)
-        print(f"  ✓  Thumbnail → {screenshot_path}")
+        print(f"  OK  Thumbnail -> {screenshot_path}")
 
         await wait(1500)
         await ctx.close()
         await browser.close()
 
-    # Rename the auto-generated video file to something predictable
     videos = sorted(output_dir.glob("*.webm"), key=lambda f: f.stat().st_mtime)
     if videos:
         final = output_dir / "demo.webm"
+        if final.exists():
+            final.unlink()
         videos[-1].rename(final)
-        print(f"\n  ✓  Video saved → {final.resolve()}\n")
+        print(f"\n  OK  Video saved -> {final.resolve()}\n")
         print("  To convert to MP4 (requires ffmpeg):")
         print(f"    ffmpeg -i {final} -c:v libx264 -crf 18 -preset slow {output_dir}/demo.mp4\n")
     else:
-        print("\n  ⚠  No .webm found – check that the app was reachable.\n")
+        print("\n  WARN  No .webm found - check that the app was reachable.\n")
 
 
 def main() -> None:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
     parser = argparse.ArgumentParser(
         description="Record a FlowLogix demo walkthrough with Playwright."
     )
@@ -304,7 +302,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    print(f"\n  FlowLogix Demo Recorder")
+    print("\n  FlowLogix Demo Recorder")
     print(f"  Target : {args.url}")
     print(f"  Output : {args.out}/")
     print(f"  Headless: {args.headless}")
