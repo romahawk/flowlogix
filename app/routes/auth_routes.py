@@ -53,6 +53,30 @@ def login():
     return render_template('login.html')
 
 
+@auth_bp.route('/demo')
+def demo_enter():
+    """Direct demo entry — always resets session and auto-logs in as demo user."""
+    from flask import current_app
+    session.pop("demo_disable_auto_login", None)
+    if not current_app.config.get("DEMO_MODE"):
+        return redirect(url_for('auth.login'))
+    u = User.query.filter_by(username="demo").first()
+    if not u:
+        u = User(username="demo", role="admin")
+        try:
+            setattr(u, "email", "demo@portfolio.app")
+        except Exception:
+            pass
+        u.set_password("demo1234")
+        db.session.add(u)
+        db.session.commit()
+    elif (u.role or '').lower() != 'admin':
+        u.role = 'admin'
+        db.session.commit()
+    login_user(u, remember=False)
+    return redirect(url_for('dashboard.dashboard'))
+
+
 @auth_bp.route('/logout')
 @login_required
 def logout():
