@@ -5,7 +5,7 @@
     <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo"
       class="h-8 sm:h-9 rounded bg-white p-0.5 flex-shrink-0" />
     <span class="text-sm sm:text-lg font-bold tracking-tight text-white">FlowLogix</span>
-    <a href="{{ url_for('onboarding.show_onboarding') }}"
+    <a href="/dashboard?tour=1"
       class="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-white/10 transition-colors duration-150">
       <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
       Tour
@@ -26,7 +26,7 @@
       <span class="hidden sm:inline">Dashboard</span>
     </a>
 
-    <a href="{{ url_for('warehouse.warehouse') }}"
+    <a href="{{ url_for('warehouse.warehouse') }}" data-tour="nav-warehouse"
       class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
       {% if current_path.startswith(url_for('warehouse.warehouse')) %}
         bg-white/15 text-white ring-1 ring-white/25
@@ -37,7 +37,7 @@
       <span class="hidden sm:inline">Warehouse</span>
     </a>
 
-    <a href="{{ url_for('delivered.delivered') }}"
+    <a href="{{ url_for('delivered.delivered') }}" data-tour="nav-delivered"
       class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
       {% if current_path.startswith(url_for('delivered.delivered')) %}
         bg-white/15 text-white ring-1 ring-white/25
@@ -84,7 +84,7 @@
     </a>
     {% endif %}
 
-    <a href="{{ url_for('activity.activity_logs') }}"
+    <a href="{{ url_for('activity.activity_logs') }}" data-tour="nav-logs"
       class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
       {% if current_path.startswith(url_for('activity.activity_logs')) %}
         bg-white/15 text-white ring-1 ring-white/25
@@ -189,98 +189,6 @@
       <i data-lucide="log-out" class="w-4 h-4"></i>
     </a>
   </nav>
-
-  <!-- Onboarding Tour Modal -->
-  <div id="tourModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center">
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-lg w-full shadow-lg relative">
-      <button id="closeTourBtn"
-        class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 dark:hover:text-white text-xl">&times;</button>
-      <h2 class="text-2xl font-bold mb-4">👋 Welcome to FlowLogix!</h2>
-      <div id="tourStepContent" class="text-sm text-gray-700 dark:text-gray-300 space-y-2"></div>
-      <div class="mt-6 flex justify-between">
-        <button id="prevStepBtn" class="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded text-sm"
-          disabled>Previous</button>
-        <button id="nextStepBtn" class="px-4 py-2 bg-blue-600 text-white rounded text-sm">Next</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const steps = [
-        {
-          title: "Dashboard Overview",
-          text: "See all active orders in one place. Use filters and timeline to track delivery progress."
-        },
-        {
-          title: "Warehouse",
-          text: "Monitor goods that have arrived but not yet delivered. You can edit quantities or add notes."
-        },
-        {
-          title: "Delivered",
-          text: "Track completed deliveries, view PODs (proof of delivery), and manage history."
-        },
-        {
-          title: "Stockreport",
-          text: "Break down incoming, stocked, and delivered goods with quantities, batches, and sender details."
-        },
-        {
-          title: "Dark Mode",
-          text: "Toggle between light/dark themes from the navbar. Your preference is saved automatically!"
-        }
-      ];
-
-      const modal = document.getElementById("tourModal");
-      const content = document.getElementById("tourStepContent");
-      const prevBtn = document.getElementById("prevStepBtn");
-      const nextBtn = document.getElementById("nextStepBtn");
-      const closeBtn = document.getElementById("closeTourBtn");
-
-      let currentStep = 0;
-
-      function showStep(index) {
-        const step = steps[index];
-        content.innerHTML = `
-          <h3 class="text-lg font-semibold">${step.title}</h3>
-          <p>${step.text}</p>
-        `;
-        prevBtn.disabled = index === 0;
-        nextBtn.textContent = index === steps.length - 1 ? "Finish" : "Next";
-      }
-
-      function startTour() {
-        modal.classList.remove("hidden");
-        showStep(currentStep);
-      }
-
-      function endTour() {
-        modal.classList.add("hidden");
-        localStorage.setItem("tourCompleted", "true");
-      }
-
-      prevBtn.addEventListener("click", () => {
-        if (currentStep > 0) {
-          currentStep--;
-          showStep(currentStep);
-        }
-      });
-
-      nextBtn.addEventListener("click", () => {
-        if (currentStep < steps.length - 1) {
-          currentStep++;
-          showStep(currentStep);
-        } else {
-          endTour();
-        }
-      });
-
-      closeBtn.addEventListener("click", endTour);
-
-      if (!localStorage.getItem("tourCompleted")) {
-        startTour();
-      }
-    });
-  </script>
 
   <!-- Global toast (available on all pages via window.showToast) -->
   <div id="toast-global"

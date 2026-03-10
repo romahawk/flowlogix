@@ -386,8 +386,7 @@ def edit_stockreport(entry_id):
         log_activity("Edit Stockreport Entry", f"Entry #{entry_id} for #{order.order_number}")
         return '', 204
 
-    except Exception as e:
-        print("❌ Error saving stockreport edit:", e)
+    except Exception:
         return "Internal server error", 500
 
 

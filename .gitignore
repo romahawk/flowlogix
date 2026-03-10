@@ -17,6 +17,7 @@ utils/backups/
 *.db
 *.sqlite
 *.sqlite3
+:memory:
 
 # local browser/session artifacts
 cookies.txt
