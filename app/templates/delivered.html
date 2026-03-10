@@ -321,24 +321,28 @@
         {% if 'page' in page_args %}{% set _ = page_args.pop('page') %}{% endif %}
         {% if 'per_page' in page_args %}{% set _ = page_args.pop('per_page') %}{% endif %}
 
-        <div class="px-4 sm:px-6 py-3 flex items-center justify-between">
-            <span class="text-xs text-gray-500 dark:text-gray-400">
-                Page {{ pagination.page }} of {{ pagination.pages }}
+        <div class="mt-2 flex items-center justify-center gap-2 py-3">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('delivered.delivered', page=1, per_page=per_page, **page_args) }}"
+                class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">First</a>
+            <a href="{{ url_for('delivered.delivered', page=pagination.prev_num, per_page=per_page, **page_args) }}"
+                class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Prev</a>
+            {% else %}
+            <span class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm opacity-40 cursor-not-allowed">First</span>
+            <span class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm opacity-40 cursor-not-allowed">Prev</span>
+            {% endif %}
+            <span class="text-sm text-gray-700 dark:text-gray-300 min-w-[170px] text-center">
+                Page {{ pagination.page }} / {{ pagination.pages }} ({{ pagination.total }} rows)
             </span>
-            <div class="flex items-center gap-2">
-                {% if pagination.has_prev %}
-                <a href="{{ url_for('delivered.delivered', page=pagination.prev_num, per_page=per_page, **page_args) }}"
-                    class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md transition-colors">
-                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> Prev
-                </a>
-                {% endif %}
-                {% if pagination.has_next %}
-                <a href="{{ url_for('delivered.delivered', page=pagination.next_num, per_page=per_page, **page_args) }}"
-                    class="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium rounded-md transition-colors">
-                    Next <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
-                </a>
-                {% endif %}
-            </div>
+            {% if pagination.has_next %}
+            <a href="{{ url_for('delivered.delivered', page=pagination.next_num, per_page=per_page, **page_args) }}"
+                class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Next</a>
+            <a href="{{ url_for('delivered.delivered', page=pagination.pages, per_page=per_page, **page_args) }}"
+                class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Last</a>
+            {% else %}
+            <span class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm opacity-40 cursor-not-allowed">Next</span>
+            <span class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm opacity-40 cursor-not-allowed">Last</span>
+            {% endif %}
         </div>
         {% endif %}
 
