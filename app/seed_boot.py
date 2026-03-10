@@ -102,18 +102,19 @@ def _enforce_timeline_rules(etd_s, eta_s, ata_s) -> Tuple[str, str, Optional[str
 
 def build_order_rows(today: date) -> list:
     """
-    30 Orders spread across ~9 months.
+    45 Orders spread across ~9 months.
 
     Groups (by order_date month):
-      A  5 orders  ~7-9 months ago  arrived Q3
-      B  5 orders  ~5-6 months ago  arrived Q4
-      E  6 orders  ~2-4 months ago  recently arrived
-      C  5 orders  last month       3 active + 2 delayed
-      D  9 orders  this month       8 active + 1 delayed
+      A   5 orders  ~7-9 months ago  arrived Q3
+      B   5 orders  ~5-6 months ago  arrived Q4
+      E   6 orders  ~2-4 months ago  recently arrived
+      C   5 orders  last month       3 active + 2 delayed
+      D   9 orders  this month       8 active + 1 delayed
+      F   6 orders  last/this month  delayed (ETA passed, no ATA)
+      G   9 orders  recent           active (future ETA)
 
-    KPI dynamics (this month vs last month):
-      In Transit  +80%   Warehouse  +67%
-      Delivered   +67%   Delayed   -50%
+    KPI counts (real DB totals):
+      In Transit  45   Warehouse  20   Delivered  21   Delayed  9
     """
     def mo(back, day): return _mo(today, back, day)
     def rel(delta):    return _rel(today, delta)
@@ -176,11 +177,28 @@ def build_order_rows(today: date) -> list:
         r(28, rel(-10), "Simvastatin 20 mg",     B[4],R[3],  460, "Q2",   T[3], rel(-4),  rel(+5),  rel(+32), None,      TR_[2]),
         r(29, rel( -7), "Amoxicillin 500 mg",    B[5],R[4],  830, "Q2",   T[4], rel(-2),  rel(+23), rel(+58), None,      TR_[1]),
         r(30, rel(-23), "Dexamethasone 4 mg/ml", B[0],R[5],  410, "ASAP", T[5], rel(-17), delayed_this_etd, delayed_this_eta, None, TR_[0]),
+        # ── Group F: 6 delayed orders (ETA passed, no ATA) ───────────────────
+        r(31, mo(1,10), "Ibuprofen 400 mg",       B[1],R[1], 1200, "ASAP", T[0], mo(1,20), rel(-35), rel( -5), None, TR_[0]),
+        r(32, mo(1,17), "Lisinopril 10 mg",       B[2],R[2],  680, "ASAP", T[1], mo(1,27), rel(-30), rel( -8), None, TR_[1]),
+        r(33, mo(1,22), "Metformin HCl 500 mg",   B[3],R[3], 1850, "ASAP", T[2], mo(1,28), rel(-28), rel(-12), None, TR_[2]),
+        r(34, mo(0, 5), "Pantoprazole sodium",    B[4],R[4],  720, "ASAP", T[3], mo(0,15), rel(-20), rel( -3), None, TR_[0]),
+        r(35, mo(0,10), "Clopidogrel 75 mg",      B[5],R[5],  580, "ASAP", T[4], mo(0,20), rel(-18), rel( -6), None, TR_[1]),
+        r(36, mo(0,12), "Atorvastatin calcium",   B[0],R[0],  920, "ASAP", T[5], mo(0,22), rel(-15), rel( -2), None, TR_[2]),
+        # ── Group G: 9 active orders (future ETA) ────────────────────────────
+        r(37, rel(-28), "Ranitidine 150 mg",      B[1],R[1],  750, "Q2",   T[6], rel(-20), rel(+12), rel(+40), None, TR_[0]),
+        r(38, rel(-25), "Ciprofloxacin 500 mg",   B[2],R[2], 1100, "Q2",   T[7], rel(-18), rel(+15), rel(+45), None, TR_[1]),
+        r(39, rel(-22), "Erythromycin 500 mg",    B[3],R[3],  880, "Q2",   T[0], rel(-15), rel( +9), rel(+35), None, TR_[2]),
+        r(40, rel(-18), "Metronidazole 400 mg",   B[4],R[4],  620, "Q2",   T[1], rel(-12), rel(+20), rel(+50), None, TR_[0]),
+        r(41, rel(-15), "Fluconazole 150 mg",     B[5],R[5],  430, "Q2",   T[2], rel( -9), rel(+18), rel(+48), None, TR_[1]),
+        r(42, rel(-12), "Clarithromycin 250 mg",  B[0],R[0], 1350, "Q2",   T[3], rel( -7), rel(+22), rel(+55), None, TR_[2]),
+        r(43, rel(-10), "Trimethoprim 200 mg",    B[1],R[1],  540, "Q2",   T[4], rel( -5), rel(+25), rel(+60), None, TR_[0]),
+        r(44, rel( -8), "Diclofenac 50 mg",       B[2],R[2],  780, "Q2",   T[5], rel( -3), rel(+28), rel(+65), None, TR_[1]),
+        r(45, rel( -5), "Naproxen 250 mg",        B[3],R[3], 2400, "Q2",   T[6], rel( -1), rel(+30), rel(+68), None, TR_[2]),
     ]
 
 
 def build_warehouse_rows(today: date) -> list:
-    """12 WarehouseStock rows (3 last month + 5 this month → +67% KPI)."""
+    """20 WarehouseStock rows spread across the last 3 months."""
     def mo(back, day): return _mo(today, back, day)
     return [
         dict(order_number="WH-001", product_name="Losartan potassium",   quantity="800",  ata=mo(3,10), transport="sea",   notes="Cold chain verified"),
@@ -195,11 +213,19 @@ def build_warehouse_rows(today: date) -> list:
         dict(order_number="WH-010", product_name="Azithromycin 250 mg",   quantity="270",  ata=mo(0,13), transport="truck", notes=""),
         dict(order_number="WH-011", product_name="Metformin HCl 500 mg",  quantity="2100", ata=mo(0,18), transport="sea",   notes="Bulk pallet"),
         dict(order_number="WH-012", product_name="Hydrochlorothiazide",   quantity="1300", ata=mo(0,22), transport="air",   notes=""),
+        dict(order_number="WH-013", product_name="Ibuprofen 400 mg",       quantity="2200", ata=mo(0, 3), transport="sea",   notes=""),
+        dict(order_number="WH-014", product_name="Ciprofloxacin 500 mg",   quantity="640",  ata=mo(0, 5), transport="air",   notes="Cold chain"),
+        dict(order_number="WH-015", product_name="Amoxicillin 500 mg",     quantity="900",  ata=mo(0, 7), transport="truck", notes="Lot #A22"),
+        dict(order_number="WH-016", product_name="Dexamethasone 4 mg/ml",  quantity="380",  ata=mo(0,10), transport="sea",   notes=""),
+        dict(order_number="WH-017", product_name="Losartan potassium",     quantity="1050", ata=mo(0,12), transport="air",   notes="Shelf C1"),
+        dict(order_number="WH-018", product_name="Atorvastatin calcium",   quantity="760",  ata=mo(0,15), transport="truck", notes=""),
+        dict(order_number="WH-019", product_name="Pantoprazole sodium",    quantity="590",  ata=mo(0,16), transport="sea",   notes="Batch #B11"),
+        dict(order_number="WH-020", product_name="Diazepam 5 mg",          quantity="290",  ata=mo(0,19), transport="air",   notes=""),
     ]
 
 
 def build_delivered_rows(today: date) -> list:
-    """11 DeliveredGoods rows (3 last month + 5 this month → +67% KPI)."""
+    """21 DeliveredGoods rows spread across the last 3 months."""
     def mo(back, day): return _mo(today, back, day)
     return [
         dict(order_number="DG-001", product_name="Amlodipine besylate",   quantity="480",  delivery_source="From Warehouse",      delivery_date=mo(3,15), transport="sea",   notes="Delivered to Central"),
@@ -213,6 +239,16 @@ def build_delivered_rows(today: date) -> list:
         dict(order_number="DG-009", product_name="Furosemide 40 mg",      quantity="490",  delivery_source="Direct from Transit",  delivery_date=mo(0,14), transport="truck", notes=""),
         dict(order_number="DG-010", product_name="Clopidogrel 75 mg",     quantity="540",  delivery_source="From Warehouse",      delivery_date=mo(0,18), transport="sea",   notes="POD uploaded"),
         dict(order_number="DG-011", product_name="Paracetamol 500 mg",    quantity="1700", delivery_source="Direct from Transit",  delivery_date=mo(0,22), transport="air",   notes=""),
+        dict(order_number="DG-012", product_name="Metformin HCl 500 mg",  quantity="2000", delivery_source="From Warehouse",       delivery_date=mo(0, 3), transport="truck", notes=""),
+        dict(order_number="DG-013", product_name="Lisinopril 10 mg",      quantity="660",  delivery_source="Direct from Transit",  delivery_date=mo(0, 6), transport="air",   notes="Signed M. Bauer"),
+        dict(order_number="DG-014", product_name="Azithromycin 250 mg",   quantity="260",  delivery_source="From Warehouse",       delivery_date=mo(0, 9), transport="sea",   notes=""),
+        dict(order_number="DG-015", product_name="Simvastatin 20 mg",     quantity="400",  delivery_source="From Warehouse",       delivery_date=mo(0,12), transport="truck", notes="POD uploaded"),
+        dict(order_number="DG-016", product_name="Hydrochlorothiazide",   quantity="1250", delivery_source="Direct from Transit",  delivery_date=mo(0,14), transport="sea",   notes=""),
+        dict(order_number="DG-017", product_name="Cetirizine HCl 10 mg",  quantity="870",  delivery_source="From Warehouse",       delivery_date=mo(0,16), transport="air",   notes="Cold chain OK"),
+        dict(order_number="DG-018", product_name="Omeprazole 20 mg",      quantity="530",  delivery_source="Direct from Transit",  delivery_date=mo(0,20), transport="truck", notes=""),
+        dict(order_number="DG-019", product_name="Losartan potassium",    quantity="980",  delivery_source="From Warehouse",       delivery_date=mo(0,23), transport="sea",   notes="Batch #L09"),
+        dict(order_number="DG-020", product_name="Atorvastatin calcium",  quantity="710",  delivery_source="Direct from Transit",  delivery_date=mo(0,25), transport="air",   notes=""),
+        dict(order_number="DG-021", product_name="Ibuprofen 400 mg",      quantity="2600", delivery_source="From Warehouse",       delivery_date=mo(1, 5), transport="truck", notes="Pallet X4"),
     ]
 
 
@@ -222,7 +258,7 @@ def ensure_seed():
     """
     Seed only when there are no orders yet.
     Uses CSV in /data/orders.csv if present (orders only), otherwise seeds the
-    full rich demo dataset: 30 orders + 12 warehouse rows + 11 delivered rows.
+    full rich demo dataset: 45 orders + 20 warehouse rows + 21 delivered rows.
     """
     from app import create_app, db
     from app.models import Order, WarehouseStock, DeliveredGoods, User
