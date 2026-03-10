@@ -1,5 +1,4 @@
-import random
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, current_app
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app.models import Order, WarehouseStock, DeliveredGoods
 from app.decorators import role_required
@@ -120,29 +119,11 @@ def add_order():
 # 🔹 Data APIs for dashboard
 # ===========================
 
-def _random_delta():
-    """Return a realistic month-over-month delta percent (-25 … +40, non-zero)."""
-    v = random.choice([-1, 1]) * random.randint(3, 35)
-    return v if v != 0 else 5
-
-
 @dashboard_bp.get('/api/kpi')
 @login_required
 def api_kpi():
     """Return KPI counts + month-over-month dynamics for the 4 dashboard cards."""
     from datetime import date, timedelta
-
-    if current_app.config.get("DEMO_MODE"):
-        transit  = random.randint(11, 99)
-        warehouse = random.randint(11, min(transit, 99))
-        delivered = random.randint(11, 99)
-        delayed   = random.randint(1, 19)
-        return jsonify({
-            "in_transit": {"count": transit,   "delta_pct": _random_delta(), "delta_label": "vs last month", "positive_is_good": True},
-            "warehouse":  {"count": warehouse,  "delta_pct": _random_delta(), "delta_label": "vs last month", "positive_is_good": True},
-            "delivered":  {"count": delivered,  "delta_pct": _random_delta(), "delta_label": "vs last month", "positive_is_good": True},
-            "delayed":    {"count": delayed,    "delta_pct": _random_delta(), "delta_label": "vs last month", "positive_is_good": False},
-        })
 
     today = date.today()
     first_this = today.replace(day=1)

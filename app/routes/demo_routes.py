@@ -3,12 +3,12 @@ Demo-mode only endpoints for seeding and clearing orders from the UI.
 All routes are guarded by DEMO_MODE config flag + login_required.
 
 Seed dataset (relative to today, always):
-  Orders        → 30 rows spanning ~9 months
-  WarehouseStock→ 12 rows
-  DeliveredGoods→ 11 rows
+  Orders        → 45 rows spanning ~9 months  (incl. 9 delayed, 15 active)
+  WarehouseStock→ 20 rows
+  DeliveredGoods→ 21 rows
 
-KPI dynamics (this month vs last month):
-  In Transit  +80%  Warehouse  +67%  Delivered  +67%  Delayed  -50% (↓ green)
+KPI totals after seed:
+  In Transit  45   Warehouse  20   Delivered  21   Delayed  9
 """
 from datetime import date
 from flask import Blueprint, jsonify, current_app
