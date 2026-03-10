@@ -18,20 +18,10 @@ Mako==1.3.10
 MarkupSafe==3.0.2
 typing_extensions==4.12.2
 
-# ── PDF export (optional — app falls back gracefully if system libs absent) ────
-weasyprint==65.1
-pydyf==0.11.0
-cssselect2==0.8.0
-tinycss2==1.4.0
-tinyhtml5==2.0.0
-webencodings==0.5.1
-pyphen==0.17.2
-fonttools==4.55.7
-Brotli==1.1.0
-zopfli==0.2.3.post1
-pillow==11.1.0
-cffi==1.17.1
-pycparser==2.21
+# ── PDF export (install manually if needed: pip install weasyprint) ───────────
+# Excluded from default requirements: weasyprint's C-extension deps
+# (zopfli, Brotli, cffi, pillow) fail to compile on Koyeb/Heroku Buildpacks.
+# The PDF export route catches ImportError and degrades gracefully.
 
 # ── Testing (dev only — Faker used in test fixtures) ──────────────────────────
 Faker>=25
