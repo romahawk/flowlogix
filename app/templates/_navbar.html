@@ -2,9 +2,15 @@
   class="sticky top-0 z-50 flex justify-between items-center px-4 sm:px-6 py-2 sm:py-3 bg-slate-900 text-white shadow-lg border-b border-slate-700">
   <!-- Left: Logo + Title + Tour -->
   <div class="flex items-center gap-3">
-    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo"
-      class="h-8 sm:h-9 rounded bg-white p-0.5 flex-shrink-0" />
-    <span class="text-sm sm:text-lg font-bold tracking-tight text-white">FlowLogix</span>
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
+      <polygon points="16,2 2,10 16,16"  fill="#1976D2" opacity=".85"/>
+      <polygon points="16,2 30,10 16,16" fill="#29B6F6" opacity=".90"/>
+      <polygon points="30,10 30,22 16,16" fill="#1535C9" opacity=".80"/>
+      <polygon points="2,10 2,22 16,16"  fill="#00BCD4" opacity=".75"/>
+      <polygon points="16,30 2,22 16,16"  fill="#1976D2" opacity=".70"/>
+      <polygon points="16,30 30,22 16,16" fill="#1535C9" opacity=".65"/>
+    </svg>
+    <span class="text-sm sm:text-base font-extrabold tracking-tight text-white uppercase">FlowLogix</span>
     <a href="/dashboard?tour=1"
       class="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-white/10 transition-colors duration-150">
       <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
