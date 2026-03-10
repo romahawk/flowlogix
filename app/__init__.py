@@ -266,6 +266,11 @@ def create_app():
     def jinja_lookup(obj, key):
         return obj.get(key) if isinstance(obj, dict) else getattr(obj, key, None)
 
+    # ---------------- Health check (Koyeb/Render/Heroku) ----------------
+    @app.get("/health")
+    def health_check():
+        return jsonify({"status": "ok"}), 200
+
     # ---------------- HTTP maintenance endpoints (no blueprint wiring) ----------------
     @app.get("/_admin/seed_if_empty")
     def http_seed_if_empty():
