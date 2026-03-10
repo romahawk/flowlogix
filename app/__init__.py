@@ -117,7 +117,7 @@ def create_app():
         return 0
 
     def _seed_if_empty_once():
-        """Seed once per process if table is empty, guarded by flags."""
+        """Seed once per process. In DEMO_MODE, also auto-refresh stale data."""
         if app.config.get('_DEMO_SEEDED'):
             return
         if not (app.config.get("DEMO_MODE") and app.config.get("AUTO_SEED_ON_EMPTY")):
@@ -126,6 +126,25 @@ def create_app():
         try:
             if Order.query.count() == 0:
                 _run_seed()
+            else:
+                # Stale check: if the newest order_date is more than 14 days
+                # behind today the seed was loaded in a previous deploy cycle.
+                # Clear all tables and reseed so dates stay current.
+                from datetime import date as _date, timedelta
+                from app.seed_boot import _parse_date
+                from app.models import WarehouseStock, DeliveredGoods
+                today = _date.today()
+                all_dates = [_parse_date(o.order_date) for o in Order.query.all()]
+                valid = [d for d in all_dates if d is not None]
+                if valid and max(valid) < today - timedelta(days=14):
+                    app.logger.info(
+                        "Demo seed stale (newest order: %s), reseeding…", max(valid)
+                    )
+                    DeliveredGoods.query.delete()
+                    WarehouseStock.query.delete()
+                    Order.query.delete()
+                    db.session.commit()
+                    _run_seed()
         except Exception as e:
             app.logger.warning(f"Auto-seed skipped: {e}")
         finally:
