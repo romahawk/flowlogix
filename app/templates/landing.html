@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowLogix — Intelligent Supply Chain Management</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              deep:   '#1535C9',
+              royal:  '#1976D2',
+              mid:    '#2196F3',
+              sky:    '#29B6F6',
+              cyan:   '#00BCD4',
+              pale:   '#E3F2FD',
+              light:  '#BBDEFB',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+
+    /* ── Geometric hero background ─────────────────────────────────────── */
+    .hero-bg {
+      background: linear-gradient(135deg, #f0f7ff 0%, #e3f2fd 40%, #fafcff 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Floating card shadow ──────────────────────────────────────────── */
+    .card-float {
+      box-shadow: 0 1px 3px rgba(21,53,201,.06), 0 8px 24px rgba(21,53,201,.08);
+      transition: box-shadow .25s ease, transform .25s ease;
+    }
+    .card-float:hover {
+      box-shadow: 0 4px 12px rgba(21,53,201,.10), 0 20px 48px rgba(21,53,201,.13);
+      transform: translateY(-3px);
+    }
+
+    /* ── Gradient text ─────────────────────────────────────────────────── */
+    .gradient-text {
+      background: linear-gradient(135deg, #1535C9 0%, #29B6F6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Nav link hover ────────────────────────────────────────────────── */
+    .nav-link {
+      position: relative;
+      color: #374151;
+      font-weight: 500;
+      transition: color .2s;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0;
+      width: 0; height: 2px;
+      background: linear-gradient(90deg, #1535C9, #29B6F6);
+      transition: width .25s ease;
+    }
+    .nav-link:hover { color: #1535C9; }
+    .nav-link:hover::after { width: 100%; }
+
+    /* ── Step connector line ───────────────────────────────────────────── */
+    .step-line::before {
+      content: '';
+      position: absolute;
+      top: 22px; left: calc(50% + 40px);
+      width: calc(100% - 80px); height: 2px;
+      background: linear-gradient(90deg, #BBDEFB, #29B6F6);
+    }
+
+    /* ── Stat number pulse on load ─────────────────────────────────────── */
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .stat-num { animation: countUp .6s ease both; }
+    .stat-num:nth-child(2) { animation-delay: .1s; }
+    .stat-num:nth-child(3) { animation-delay: .2s; }
+
+    /* ── Scroll-reveal ─────────────────────────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .55s ease, transform .55s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+
+<body class="font-sans text-gray-800 bg-white antialiased">
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <nav class="fixed top-0 inset-x-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2.5 select-none">
+        <!-- Inline SVG diamond mark matching the logo facets -->
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none"/>
+          <!-- top-left facet -->
+          <polygon points="16,2 2,10 16,16"  fill="#1976D2" opacity=".85"/>
+          <!-- top-right facet -->
+          <polygon points="16,2 30,10 16,16" fill="#29B6F6" opacity=".90"/>
+          <!-- bottom-right facet -->
+          <polygon points="30,10 30,22 16,16" fill="#1535C9" opacity=".80"/>
+          <!-- bottom-left facet -->
+          <polygon points="2,10 2,22 16,16"  fill="#00BCD4" opacity=".75"/>
+          <!-- bottom -->
+          <polygon points="16,30 2,22 16,16"  fill="#1976D2" opacity=".70"/>
+          <polygon points="16,30 30,22 16,16" fill="#1535C9" opacity=".65"/>
+        </svg>
+        <span class="text-xl font-800 tracking-tight text-brand-deep font-extrabold">FLOWLOGIX</span>
+      </a>
+
+      <!-- Desktop links -->
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#features"   class="nav-link text-sm">Features</a>
+        <a href="#how-it-works" class="nav-link text-sm">How It Works</a>
+        <a href="#stats"      class="nav-link text-sm">Stats</a>
+      </div>
+
+      <!-- CTAs -->
+      <div class="flex items-center gap-3">
+        <a href="{{ url_for('auth.login') }}"
+           class="hidden sm:inline-flex text-sm font-semibold text-brand-deep hover:text-brand-royal transition-colors px-4 py-2">
+          Sign In
+        </a>
+        <a href="{{ url_for('auth.login') }}"
+           class="inline-flex items-center gap-1.5 text-sm font-semibold bg-brand-deep text-white px-5 py-2.5 rounded-lg hover:bg-brand-royal transition-colors shadow-sm">
+          View Demo
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       HERO
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="hero-bg min-h-screen flex items-center pt-16">
+
+    <!-- Geometric SVG background pattern -->
+    <svg class="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#1535C9" stop-opacity=".06"/>
+          <stop offset="100%" stop-color="#29B6F6" stop-opacity=".04"/>
+        </linearGradient>
+        <linearGradient id="g2" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#00BCD4" stop-opacity=".07"/>
+          <stop offset="100%" stop-color="#1976D2" stop-opacity=".03"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Large diamond grid -->
+      <g stroke="#1535C9" stroke-opacity=".07" stroke-width="1" fill="none">
+        <!-- Diagonal grid lines -->
+        <line x1="-200" y1="0"   x2="1400" y2="900"/>
+        <line x1="-200" y1="100" x2="1400" y2="1000"/>
+        <line x1="-200" y1="200" x2="1400" y2="1100"/>
+        <line x1="-200" y1="300" x2="1400" y2="1200"/>
+        <line x1="-200" y1="400" x2="1400" y2="1300"/>
+        <line x1="0"    y1="-200" x2="900"  y2="1400"/>
+        <line x1="100"  y1="-200" x2="1000" y2="1400"/>
+        <line x1="200"  y1="-200" x2="1100" y2="1400"/>
+        <line x1="300"  y1="-200" x2="1200" y2="1400"/>
+        <line x1="400"  y1="-200" x2="1300" y2="1400"/>
+        <line x1="500"  y1="-200" x2="1400" y2="1300"/>
+        <line x1="600"  y1="-200" x2="1400" y2="1100"/>
+        <line x1="700"  y1="-200" x2="1400" y2="900"/>
+        <line x1="800"  y1="-200" x2="1400" y2="700"/>
+        <!-- Reverse diagonals -->
+        <line x1="1400" y1="0"   x2="-200" y2="900"/>
+        <line x1="1400" y1="100" x2="-200" y2="1000"/>
+        <line x1="1400" y1="200" x2="-200" y2="1100"/>
+        <line x1="1400" y1="300" x2="-200" y2="1200"/>
+        <line x1="1400" y1="400" x2="-200" y2="1300"/>
+        <line x1="1200" y1="-200" x2="0"   y2="1400"/>
+        <line x1="1100" y1="-200" x2="-100" y2="1400"/>
+        <line x1="1000" y1="-200" x2="-200" y2="1400"/>
+      </g>
+
+      <!-- Accent diamonds (large translucent shapes, top-right cluster) -->
+      <polygon points="900,50 1050,180 900,310 750,180"   fill="url(#g1)"/>
+      <polygon points="980,150 1100,260 980,370 860,260"  fill="url(#g2)" opacity=".6"/>
+      <polygon points="1060,20 1160,120 1060,220 960,120" fill="url(#g1)" opacity=".5"/>
+
+      <!-- Bottom-left cluster -->
+      <polygon points="80,600 220,700 80,800 -60,700"  fill="url(#g2)"/>
+      <polygon points="0,680 120,770 0,860 -120,770"   fill="url(#g1)" opacity=".5"/>
+
+      <!-- Dots grid (right side) -->
+      <g fill="#1535C9" opacity=".10">
+        <circle cx="1100" cy="200" r="2"/><circle cx="1140" cy="200" r="2"/><circle cx="1180" cy="200" r="2"/><circle cx="1220" cy="200" r="2"/>
+        <circle cx="1100" cy="240" r="2"/><circle cx="1140" cy="240" r="2"/><circle cx="1180" cy="240" r="2"/><circle cx="1220" cy="240" r="2"/>
+        <circle cx="1100" cy="280" r="2"/><circle cx="1140" cy="280" r="2"/><circle cx="1180" cy="280" r="2"/><circle cx="1220" cy="280" r="2"/>
+        <circle cx="1100" cy="320" r="2"/><circle cx="1140" cy="320" r="2"/><circle cx="1180" cy="320" r="2"/><circle cx="1220" cy="320" r="2"/>
+        <circle cx="1100" cy="360" r="2"/><circle cx="1140" cy="360" r="2"/><circle cx="1180" cy="360" r="2"/><circle cx="1220" cy="360" r="2"/>
+        <circle cx="1100" cy="400" r="2"/><circle cx="1140" cy="400" r="2"/><circle cx="1180" cy="400" r="2"/><circle cx="1220" cy="400" r="2"/>
+      </g>
+    </svg>
+
+    <!-- Hero content -->
+    <div class="relative max-w-6xl mx-auto px-6 py-24 lg:py-32 grid lg:grid-cols-2 gap-16 items-center">
+
+      <!-- Left: text -->
+      <div>
+        <span class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-brand-mid bg-brand-pale px-3 py-1.5 rounded-full mb-6">
+          <span class="w-1.5 h-1.5 rounded-full bg-brand-sky inline-block"></span>
+          Supply Chain Intelligence
+        </span>
+
+        <h1 class="text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight text-gray-900 mb-6">
+          Move Smarter.<br/>
+          <span class="gradient-text">Ship Faster.</span><br/>
+          Scale Further.
+        </h1>
+
+        <p class="text-lg text-gray-500 leading-relaxed max-w-md mb-10">
+          FlowLogix gives your operations team real-time visibility across
+          warehouses, orders, and deliveries — all in one clean dashboard.
+        </p>
+
+        <div class="flex flex-wrap gap-4">
+          <a href="{{ url_for('auth.login') }}"
+             class="inline-flex items-center gap-2 bg-brand-deep text-white font-semibold px-7 py-3.5 rounded-xl hover:bg-brand-royal transition-colors shadow-md shadow-brand-deep/20">
+            View Live Demo
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+          </a>
+          <a href="#features"
+             class="inline-flex items-center gap-2 border border-gray-200 text-gray-700 font-semibold px-7 py-3.5 rounded-xl hover:border-brand-mid hover:text-brand-mid transition-colors">
+            See Features
+          </a>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="flex items-center gap-6 mt-10 pt-8 border-t border-gray-100">
+          <div class="flex -space-x-2">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-deep to-brand-sky border-2 border-white"></div>
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-sky to-brand-cyan border-2 border-white"></div>
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-royal to-brand-mid border-2 border-white"></div>
+          </div>
+          <p class="text-sm text-gray-500">Trusted by logistics teams worldwide</p>
+        </div>
+      </div>
+
+      <!-- Right: dashboard preview card -->
+      <div class="hidden lg:block">
+        <div class="relative bg-white rounded-2xl p-1 card-float border border-gray-100">
+          <!-- Fake mini-dashboard chrome -->
+          <div class="bg-gray-50 rounded-xl p-5">
+            <!-- Top bar -->
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-2.5 h-2.5 rounded-full bg-red-300"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-yellow-300"></div>
+                <div class="w-2.5 h-2.5 rounded-full bg-green-300"></div>
+              </div>
+              <div class="h-3 w-32 bg-gray-200 rounded-full"></div>
+              <div class="h-3 w-16 bg-brand-light rounded-full"></div>
+            </div>
+
+            <!-- KPI row -->
+            <div class="grid grid-cols-3 gap-3 mb-4">
+              <div class="bg-white rounded-lg p-3 border border-gray-100">
+                <div class="text-xs text-gray-400 mb-1">Orders</div>
+                <div class="text-xl font-bold text-brand-deep">2,841</div>
+                <div class="text-xs text-green-500 font-medium mt-1">↑ 12%</div>
+              </div>
+              <div class="bg-white rounded-lg p-3 border border-gray-100">
+                <div class="text-xs text-gray-400 mb-1">In Transit</div>
+                <div class="text-xl font-bold text-brand-royal">384</div>
+                <div class="text-xs text-brand-sky font-medium mt-1">Live</div>
+              </div>
+              <div class="bg-white rounded-lg p-3 border border-gray-100">
+                <div class="text-xs text-gray-400 mb-1">Delivered</div>
+                <div class="text-xl font-bold text-brand-mid">98.4%</div>
+                <div class="text-xs text-green-500 font-medium mt-1">On-time</div>
+              </div>
+            </div>
+
+            <!-- Fake bar chart -->
+            <div class="bg-white rounded-lg p-3 border border-gray-100 mb-3">
+              <div class="text-xs text-gray-400 mb-3">Weekly Shipments</div>
+              <div class="flex items-end gap-1.5 h-16">
+                <div class="flex-1 bg-brand-light rounded-t-sm" style="height:55%"></div>
+                <div class="flex-1 bg-brand-mid rounded-t-sm" style="height:72%"></div>
+                <div class="flex-1 bg-brand-light rounded-t-sm" style="height:48%"></div>
+                <div class="flex-1 bg-brand-sky rounded-t-sm" style="height:88%"></div>
+                <div class="flex-1 bg-brand-mid rounded-t-sm" style="height:65%"></div>
+                <div class="flex-1 bg-brand-deep rounded-t-sm" style="height:100%"></div>
+                <div class="flex-1 bg-brand-light rounded-t-sm" style="height:78%"></div>
+              </div>
+            </div>
+
+            <!-- Fake table rows -->
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-gray-100">
+                <div class="w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0"></div>
+                <div class="h-2 flex-1 bg-gray-100 rounded-full"></div>
+                <div class="h-2 w-12 bg-brand-light rounded-full"></div>
+              </div>
+              <div class="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-gray-100">
+                <div class="w-1.5 h-1.5 rounded-full bg-brand-sky flex-shrink-0"></div>
+                <div class="h-2 flex-1 bg-gray-100 rounded-full"></div>
+                <div class="h-2 w-16 bg-blue-100 rounded-full"></div>
+              </div>
+              <div class="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-gray-100">
+                <div class="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0"></div>
+                <div class="h-2 flex-1 bg-gray-100 rounded-full"></div>
+                <div class="h-2 w-10 bg-yellow-100 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       STATS BAND
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="stats" class="border-y border-gray-100 bg-white">
+    <div class="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div class="text-center reveal">
+        <div class="stat-num text-4xl font-extrabold gradient-text mb-1">99.2%</div>
+        <div class="text-sm text-gray-500 font-medium">Order accuracy</div>
+      </div>
+      <div class="text-center reveal" style="transition-delay:.1s">
+        <div class="stat-num text-4xl font-extrabold gradient-text mb-1">48 h</div>
+        <div class="text-sm text-gray-500 font-medium">Avg. fulfillment time</div>
+      </div>
+      <div class="text-center reveal" style="transition-delay:.2s">
+        <div class="stat-num text-4xl font-extrabold gradient-text mb-1">12 k+</div>
+        <div class="text-sm text-gray-500 font-medium">Shipments tracked</div>
+      </div>
+      <div class="text-center reveal" style="transition-delay:.3s">
+        <div class="stat-num text-4xl font-extrabold gradient-text mb-1">5 ★</div>
+        <div class="text-sm text-gray-500 font-medium">Operator satisfaction</div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       FEATURES
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="features" class="py-24 bg-white">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <div class="text-center max-w-2xl mx-auto mb-16 reveal">
+        <span class="text-xs font-semibold uppercase tracking-widest text-brand-mid">Platform</span>
+        <h2 class="text-4xl font-extrabold text-gray-900 mt-3 mb-4">Everything your team needs</h2>
+        <p class="text-gray-500">One platform to plan, execute, and optimise every step of your supply chain.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-7">
+
+        <!-- Feature 1 -->
+        <div class="group bg-white rounded-2xl p-8 card-float border border-gray-100 reveal">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-deep to-brand-mid flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <!-- Box/shipment icon -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Order Tracking</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Real-time status on every order from placement to doorstep.
+            Full audit trail with timestamps and carrier integration.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="text-xs bg-brand-pale text-brand-deep font-medium px-2.5 py-1 rounded-full">Real-time</span>
+            <span class="text-xs bg-brand-pale text-brand-deep font-medium px-2.5 py-1 rounded-full">Audit trail</span>
+          </div>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="group bg-white rounded-2xl p-8 card-float border border-gray-100 reveal" style="transition-delay:.1s">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-sky to-brand-cyan flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <!-- Warehouse icon -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m2.25-18v18m13.5-18v18m2.25-18v18M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Warehouse Management</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Monitor stock levels, manage bin locations, and trigger
+            reorder alerts automatically across multiple sites.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="text-xs bg-cyan-50 text-brand-cyan font-medium px-2.5 py-1 rounded-full">Multi-site</span>
+            <span class="text-xs bg-cyan-50 text-brand-cyan font-medium px-2.5 py-1 rounded-full">Auto-alerts</span>
+          </div>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="group bg-white rounded-2xl p-8 card-float border border-gray-100 reveal" style="transition-delay:.2s">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-royal to-brand-sky flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <!-- Chart icon -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Analytics & Reports</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Turn raw logistics data into actionable insight. Transit efficiency,
+            on-time rates, and cost-per-shipment at a glance.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="text-xs bg-brand-pale text-brand-royal font-medium px-2.5 py-1 rounded-full">PDF export</span>
+            <span class="text-xs bg-brand-pale text-brand-royal font-medium px-2.5 py-1 rounded-full">Charts</span>
+          </div>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="group bg-white rounded-2xl p-8 card-float border border-gray-100 reveal" style="transition-delay:.05s">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-mid to-brand-deep flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <!-- Users icon -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Role-Based Access</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Admins, managers, and operators each see exactly what they need.
+            Fine-grained permissions with full activity logging.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="text-xs bg-brand-pale text-brand-deep font-medium px-2.5 py-1 rounded-full">RBAC</span>
+            <span class="text-xs bg-brand-pale text-brand-deep font-medium px-2.5 py-1 rounded-full">Audit log</span>
+          </div>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="group bg-white rounded-2xl p-8 card-float border border-gray-100 reveal" style="transition-delay:.15s">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-cyan to-brand-sky flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <!-- Upload icon -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Bulk Import</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Upload Excel or CSV files to seed orders and stock reports in seconds.
+            Validation errors surface inline before any data is written.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="text-xs bg-cyan-50 text-brand-cyan font-medium px-2.5 py-1 rounded-full">Excel/CSV</span>
+            <span class="text-xs bg-cyan-50 text-brand-cyan font-medium px-2.5 py-1 rounded-full">Validation</span>
+          </div>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="group bg-white rounded-2xl p-8 card-float border border-gray-100 reveal" style="transition-delay:.25s">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-deep to-brand-royal flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <!-- API/code icon -->
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">REST API v1</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Full JSON API with consistent error envelopes and trace IDs.
+            Integrate FlowLogix with any ERP, WMS, or 3PL system.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            <span class="text-xs bg-brand-pale text-brand-deep font-medium px-2.5 py-1 rounded-full">JSON</span>
+            <span class="text-xs bg-brand-pale text-brand-deep font-medium px-2.5 py-1 rounded-full">Trace IDs</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       HOW IT WORKS
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <section id="how-it-works" class="py-24 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <div class="text-center max-w-2xl mx-auto mb-16 reveal">
+        <span class="text-xs font-semibold uppercase tracking-widest text-brand-mid">Process</span>
+        <h2 class="text-4xl font-extrabold text-gray-900 mt-3 mb-4">Up and running in minutes</h2>
+        <p class="text-gray-500">No complex integrations. No weeks of onboarding. Just log in and go.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-10 relative">
+
+        <!-- Connector lines (desktop) -->
+        <div class="hidden md:block absolute top-10 left-[calc(33%-24px)] right-[calc(33%-24px)] h-0.5 bg-gradient-to-r from-brand-light via-brand-sky to-brand-light"></div>
+
+        <!-- Step 1 -->
+        <div class="text-center reveal">
+          <div class="relative inline-flex w-16 h-16 rounded-2xl bg-white border-2 border-brand-light items-center justify-center mb-6 shadow-sm">
+            <span class="text-2xl font-extrabold gradient-text">1</span>
+            <span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-brand-deep text-white text-xs flex items-center justify-center font-bold">✓</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Create your account</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Sign up in 30 seconds. The demo environment pre-loads realistic
+            supply chain data so you can explore immediately.
+          </p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="text-center reveal" style="transition-delay:.15s">
+          <div class="relative inline-flex w-16 h-16 rounded-2xl bg-white border-2 border-brand-sky items-center justify-center mb-6 shadow-sm">
+            <span class="text-2xl font-extrabold gradient-text">2</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Import your data</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Upload an Excel file or use the API to push orders, warehouses,
+            and stock reports from your existing systems.
+          </p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="text-center reveal" style="transition-delay:.3s">
+          <div class="relative inline-flex w-16 h-16 rounded-2xl bg-white border-2 border-brand-mid items-center justify-center mb-6 shadow-sm">
+            <span class="text-2xl font-extrabold gradient-text">3</span>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Track &amp; optimise</h3>
+          <p class="text-gray-500 text-sm leading-relaxed">
+            Use the live dashboard and analytics to spot bottlenecks,
+            reduce transit times, and hit your SLAs.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       CTA BANNER
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <section class="py-24 bg-white">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="relative rounded-3xl overflow-hidden reveal" style="background: linear-gradient(135deg, #1535C9 0%, #1976D2 40%, #29B6F6 100%)">
+
+        <!-- Background geometric pattern -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+          <g stroke="white" stroke-opacity=".08" stroke-width="1" fill="none">
+            <line x1="-100" y1="0"   x2="700" y2="500"/>
+            <line x1="-100" y1="80"  x2="700" y2="580"/>
+            <line x1="-100" y1="160" x2="700" y2="660"/>
+            <line x1="700"  y1="0"   x2="-100" y2="500"/>
+            <line x1="700"  y1="80"  x2="-100" y2="580"/>
+            <polygon points="520,20 600,80 520,140 440,80" fill="white" fill-opacity=".05"/>
+            <polygon points="560,60 620,110 560,160 500,110" fill="white" fill-opacity=".04"/>
+          </g>
+        </svg>
+
+        <div class="relative px-10 py-14 text-center">
+          <h2 class="text-4xl font-extrabold text-white mb-4 leading-tight">
+            Ready to take control<br/>of your supply chain?
+          </h2>
+          <p class="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
+            Explore a fully-loaded demo environment — no credit card, no setup required.
+          </p>
+          <a href="{{ url_for('auth.login') }}"
+             class="inline-flex items-center gap-2 bg-white text-brand-deep font-bold px-8 py-4 rounded-xl text-base hover:bg-brand-pale transition-colors shadow-lg">
+            Launch Demo Now
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <footer class="border-t border-gray-100 bg-white">
+    <div class="max-w-6xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-2">
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+          <polygon points="16,2 2,10 16,16"  fill="#1976D2" opacity=".85"/>
+          <polygon points="16,2 30,10 16,16" fill="#29B6F6" opacity=".90"/>
+          <polygon points="30,10 30,22 16,16" fill="#1535C9" opacity=".80"/>
+          <polygon points="2,10 2,22 16,16"  fill="#00BCD4" opacity=".75"/>
+          <polygon points="16,30 2,22 16,16"  fill="#1976D2" opacity=".70"/>
+          <polygon points="16,30 30,22 16,16" fill="#1535C9" opacity=".65"/>
+        </svg>
+        <span class="text-sm font-extrabold tracking-tight text-brand-deep">FLOWLOGIX</span>
+      </div>
+
+      <p class="text-xs text-gray-400">&copy; 2026 FlowLogix. All rights reserved.</p>
+
+      <div class="flex gap-5">
+        <a href="{{ url_for('auth.login') }}" class="text-xs text-gray-400 hover:text-brand-deep transition-colors">Sign In</a>
+        <a href="{{ url_for('auth.login') }}" class="text-xs text-gray-400 hover:text-brand-deep transition-colors">Demo</a>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ════════════════════════════════════════════════════════════════════
+       SCROLL-REVEAL SCRIPT
+  ═══════════════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      const els = document.querySelectorAll('.reveal');
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+      }, { threshold: 0.12 });
+      els.forEach(el => io.observe(el));
+    })();
+  </script>
+
+</body>
+</html>
