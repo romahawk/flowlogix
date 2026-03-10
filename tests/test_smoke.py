@@ -11,10 +11,11 @@ def test_login_page_loads(client):
     assert b"login" in resp.data.lower()
 
 
-def test_root_redirects(client):
-    """GET / redirects (to login when unauthenticated, demo off)."""
+def test_root_renders_landing(client):
+    """GET / renders the public landing page for unauthenticated visitors."""
     resp = client.get("/")
-    assert resp.status_code in (301, 302)
+    assert resp.status_code == 200
+    assert b"flowlogix" in resp.data.lower()
 
 
 def test_api_orders_requires_auth(client):
