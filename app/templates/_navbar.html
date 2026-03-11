@@ -1,7 +1,8 @@
 <header
-  class="sticky top-0 z-50 flex justify-between items-center px-4 sm:px-6 py-2 sm:py-3 bg-slate-900 text-white shadow-lg border-b border-slate-700">
+  class="sticky top-0 z-50 border-b border-slate-700 bg-slate-900 text-white shadow-lg">
+  <div class="flex items-center justify-between gap-3 px-4 py-2 sm:px-6 sm:py-3">
   <!-- Left: Logo + Title + Tour -->
-  <div class="flex items-center gap-3">
+  <div class="flex min-w-0 items-center gap-3">
     <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
       <polygon points="16,2 2,10 16,16"  fill="#1976D2" opacity=".85"/>
       <polygon points="16,2 30,10 16,16" fill="#29B6F6" opacity=".90"/>
@@ -10,16 +11,81 @@
       <polygon points="16,30 2,22 16,16"  fill="#1976D2" opacity=".70"/>
       <polygon points="16,30 30,22 16,16" fill="#1535C9" opacity=".65"/>
     </svg>
-    <span class="text-sm sm:text-base font-extrabold tracking-tight text-white uppercase">FlowLogix</span>
+    <span class="truncate text-sm font-extrabold tracking-tight text-white uppercase sm:text-base">FlowLogix</span>
     <a href="/dashboard?tour=1"
-      class="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-white/10 transition-colors duration-150">
+      class="hidden xl:flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-white/10 transition-colors duration-150">
       <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
       Tour
     </a>
   </div>
 
+  <div class="flex items-center gap-1.5 xl:hidden">
+    <a href="{{ url_for('dashboard.dashboard') }}"
+      data-tour="nav-dashboard"
+      class="flex items-center justify-center w-9 h-9 rounded-md border transition-colors duration-150
+      {% if current_path.startswith(url_for('dashboard.dashboard')) %}
+        border-blue-400/40 bg-blue-500/15 text-white
+      {% else %}
+        border-white/10 bg-white/5 text-slate-200 hover:bg-white/10
+      {% endif %}"
+      title="Dashboard"
+      aria-label="Dashboard">
+      <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+    </a>
+
+    <a href="{{ url_for('warehouse.warehouse') }}" data-tour="nav-warehouse"
+      class="flex items-center justify-center w-9 h-9 rounded-md border transition-colors duration-150
+      {% if current_path.startswith(url_for('warehouse.warehouse')) %}
+        border-blue-400/40 bg-blue-500/15 text-white
+      {% else %}
+        border-white/10 bg-white/5 text-slate-200 hover:bg-white/10
+      {% endif %}"
+      title="Warehouse"
+      aria-label="Warehouse">
+      <i data-lucide="package" class="w-4 h-4"></i>
+    </a>
+
+    <a href="{{ url_for('delivered.delivered') }}" data-tour="nav-delivered"
+      class="flex items-center justify-center w-9 h-9 rounded-md border transition-colors duration-150
+      {% if current_path.startswith(url_for('delivered.delivered')) %}
+        border-blue-400/40 bg-blue-500/15 text-white
+      {% else %}
+        border-white/10 bg-white/5 text-slate-200 hover:bg-white/10
+      {% endif %}"
+      title="Delivered"
+      aria-label="Delivered">
+      <i data-lucide="truck" class="w-4 h-4"></i>
+    </a>
+
+    {% if current_path.startswith(url_for('dashboard.dashboard')) %}
+    <button
+      class="flex items-center justify-center w-9 h-9 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm transition-colors duration-150 toggle-form-btn"
+      title="Add a new incoming order"
+      aria-label="Add order">
+      <i data-lucide="plus" class="w-4 h-4 flex-shrink-0 btn-icon-open"></i>
+      <i data-lucide="x" class="w-4 h-4 flex-shrink-0 btn-icon-close hidden"></i>
+    </button>
+    {% elif current_path.startswith(url_for('warehouse.warehouse')) %}
+    <button onclick="document.getElementById('manual-order-form').classList.toggle('hidden')"
+      class="flex items-center justify-center w-9 h-9 rounded-md bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm transition-colors duration-150"
+      title="Add manual stock"
+      aria-label="Add manual stock">
+      <i data-lucide="plus" class="w-4 h-4 flex-shrink-0"></i>
+    </button>
+    {% endif %}
+
+    <button id="mobile-nav-toggle" type="button"
+      class="flex items-center justify-center w-9 h-9 rounded-md border border-white/10 bg-white/5 text-slate-200 hover:bg-white/10 transition-colors duration-150"
+      aria-label="Open navigation menu"
+      aria-expanded="false"
+      aria-controls="mobile-nav-panel">
+      <i data-lucide="menu" class="mobile-nav-icon-open w-4 h-4"></i>
+      <i data-lucide="x" class="mobile-nav-icon-close hidden w-4 h-4"></i>
+    </button>
+  </div>
+
   <!-- Right: Navigation & Controls -->
-  <nav class="flex items-center gap-1 sm:gap-1.5">
+  <nav class="hidden items-center gap-1 xl:flex xl:gap-1.5">
 
     <a href="{{ url_for('dashboard.dashboard') }}"
       class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-150
@@ -195,6 +261,89 @@
       <i data-lucide="log-out" class="w-4 h-4"></i>
     </a>
   </nav>
+  </div>
+
+  <div id="mobile-nav-panel" class="hidden border-t border-slate-800 bg-slate-950/96 px-4 pb-4 pt-3 xl:hidden">
+    <div class="grid grid-cols-2 gap-2">
+      <a href="/dashboard?tour=1"
+        class="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors duration-150">
+        <i data-lucide="book-open" class="w-4 h-4"></i>
+        <span>Tour</span>
+      </a>
+
+      <a href="{{ url_for('activity.activity_logs') }}" data-tour="nav-logs"
+        class="flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors duration-150
+        {% if current_path.startswith(url_for('activity.activity_logs')) %}
+          border-blue-400/40 bg-blue-500/15 text-white
+        {% else %}
+          border-white/10 bg-white/5 text-slate-200 hover:bg-white/10
+        {% endif %}">
+        <i data-lucide="scroll-text" class="w-4 h-4 flex-shrink-0"></i>
+        <span>Logs</span>
+      </a>
+
+      {% if current_user.role == 'admin' %}
+      <a href="{{ url_for('admin.user_management') }}"
+        class="col-span-2 flex items-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors duration-150
+        {% if current_path.startswith(url_for('admin.user_management')) %}
+          border-blue-400/40 bg-blue-500/15 text-white
+        {% else %}
+          border-white/10 bg-white/5 text-slate-200 hover:bg-white/10
+        {% endif %}">
+        <i data-lucide="users" class="w-4 h-4 flex-shrink-0"></i>
+        <span>Users</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <div class="mt-3 grid grid-cols-2 gap-2">
+      <button id="mobile-dark-mode-toggle" type="button"
+        class="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors duration-150">
+        <i data-lucide="sun-moon" class="w-4 h-4"></i>
+        <span>Theme</span>
+      </button>
+
+      <button id="mobile-close-menu" type="button"
+        class="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm font-medium text-slate-200 hover:bg-white/10 transition-colors duration-150">
+        <i data-lucide="panel-top-close" class="w-4 h-4"></i>
+        <span>Close</span>
+      </button>
+
+      <div class="col-span-2 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-200">
+        <div class="min-w-0">
+          <div class="truncate font-medium">{{ current_user.username }}</div>
+          <div class="text-xs text-slate-400">{{ current_user.role }}</div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" title="Logout"
+          class="flex items-center justify-center w-9 h-9 rounded-md text-slate-300 hover:text-red-400 hover:bg-white/10 transition-colors duration-150">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </div>
+
+    {% if DEMO_MODE %}
+    <div class="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3">
+      <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-300">
+        <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i>
+        Demo Controls
+      </div>
+      <div class="grid grid-cols-1 gap-2">
+        <button type="button" onclick="demoAction('seed')"
+          class="w-full rounded-lg bg-slate-900/70 px-3 py-2 text-left text-sm text-slate-100 hover:bg-slate-800 transition-colors duration-150">
+          Seed orders
+        </button>
+        <button type="button" onclick="demoAction('reset')"
+          class="w-full rounded-lg bg-slate-900/70 px-3 py-2 text-left text-sm text-slate-100 hover:bg-slate-800 transition-colors duration-150">
+          Reset demo
+        </button>
+        <button type="button" onclick="demoAction('clear')"
+          class="w-full rounded-lg bg-slate-900/70 px-3 py-2 text-left text-sm text-red-300 hover:bg-slate-800 transition-colors duration-150">
+          Clear all orders
+        </button>
+      </div>
+    </div>
+    {% endif %}
+  </div>
 
   <!-- Global toast (available on all pages via window.showToast) -->
   <div id="toast-global"
@@ -216,6 +365,51 @@
 
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>lucide.createIcons();</script>
+
+  <script>
+    (function () {
+      const toggle = document.getElementById('mobile-nav-toggle');
+      const panel = document.getElementById('mobile-nav-panel');
+      const darkModeMirror = document.getElementById('mobile-dark-mode-toggle');
+      const closeBtn = document.getElementById('mobile-close-menu');
+      if (!toggle || !panel) return;
+
+      const openIcon = toggle.querySelector('.mobile-nav-icon-open');
+      const closeIcon = toggle.querySelector('.mobile-nav-icon-close');
+
+      function setOpen(isOpen) {
+        panel.classList.toggle('hidden', !isOpen);
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        openIcon?.classList.toggle('hidden', isOpen);
+        closeIcon?.classList.toggle('hidden', !isOpen);
+      }
+
+      toggle.addEventListener('click', () => {
+        const isOpen = panel.classList.contains('hidden');
+        setOpen(isOpen);
+      });
+
+      document.addEventListener('click', (event) => {
+        if (panel.classList.contains('hidden')) return;
+        if (panel.contains(event.target) || toggle.contains(event.target)) return;
+        setOpen(false);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') setOpen(false);
+      });
+
+      panel.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => setOpen(false));
+      });
+
+      darkModeMirror?.addEventListener('click', () => {
+        document.getElementById('dark-mode-toggle')?.click();
+      });
+
+      closeBtn?.addEventListener('click', () => setOpen(false));
+    })();
+  </script>
 
   <!-- Dark mode -->
   <script>
