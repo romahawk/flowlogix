@@ -6,8 +6,6 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/')
 def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard.dashboard'))
     return render_template('landing.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
