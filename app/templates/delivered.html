@@ -332,7 +332,7 @@
             <span class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm opacity-40 cursor-not-allowed">Prev</span>
             {% endif %}
             <span class="text-sm text-gray-700 dark:text-gray-300 min-w-[170px] text-center">
-                Page {{ pagination.page }} / {{ pagination.pages }} ({{ pagination.total }} rows)
+                Page {{ pagination.page }} / {{ pagination.pages }} ({{ total_count }} rows)
             </span>
             {% if pagination.has_next %}
             <a href="{{ url_for('delivered.delivered', page=pagination.next_num, per_page=per_page, **page_args) }}"

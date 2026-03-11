@@ -52,6 +52,7 @@ def delivered():
     query = query.order_by(sort_order)
 
 
+    total_count = query.count()
     pagination = query.paginate(page=page, per_page=per_page)
 
     # Reported Orders
@@ -66,6 +67,7 @@ def delivered():
         delivered_items=pagination.items,
         pagination=pagination,
         per_page=per_page,
+        total_count=total_count,
         reported_order_numbers=reported_order_numbers,
         sort_key=sort_key,
         sort_dir=sort_dir

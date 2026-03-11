@@ -54,6 +54,7 @@ def warehouse():
     else:
         query = query.order_by(WarehouseStock.ata.desc())
 
+    total_count = query.count()
     pagination = query.paginate(page=page, per_page=per_page)
     warehouse_items = pagination.items
 
@@ -64,6 +65,7 @@ def warehouse():
         warehouse_items=warehouse_items,
         pagination=pagination,
         per_page=per_page,
+        total_count=total_count,
         reported_ids=reported_ids,
         sort_key=sort_key,
         sort_dir=sort_dir,
