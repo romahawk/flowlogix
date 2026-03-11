@@ -882,17 +882,17 @@ document.addEventListener("DOMContentLoaded", function () {
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap" title="Delivery Year: ${order.delivery_year}">${order.order_date || "-"}</td>
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.order_number || "-"}</td>
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.product_name || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.buyer || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.responsible || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden sm:table-cell">${order.buyer || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">${order.responsible || "-"}</td>
         <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${formatQuantity(order.quantity)}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.required_delivery || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.terms_of_delivery || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.payment_date || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.etd || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.eta || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.ata || ""}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">${order.required_delivery || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">${order.terms_of_delivery || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">${order.payment_date || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">${order.etd || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">${order.eta || "-"}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden lg:table-cell">${order.ata || ""}</td>
         <td class="px-2 py-1 whitespace-nowrap">${statusBadge(order.transit_status)}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${transportIcon}</td>
+        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap hidden sm:table-cell">${transportIcon}</td>
         <td class="px-2 py-1 text-center">
           <div class="flex items-center justify-center gap-0.5">
             ${
