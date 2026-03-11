@@ -3,6 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FlowLogix gives operations teams real-time visibility across warehouses, orders, and deliveries in one clean dashboard." />
+  <meta name="robots" content="index,follow" />
+  <meta name="theme-color" content="#1535C9" />
+  <link rel="canonical" href="{{ request.base_url }}" />
+  <meta property="og:site_name" content="FlowLogix" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="FlowLogix - Intelligent Supply Chain Management" />
+  <meta property="og:description" content="Move smarter, ship faster, and scale further with real-time visibility across warehouses, orders, and deliveries." />
+  <meta property="og:url" content="{{ request.base_url }}" />
+  <meta property="og:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='images/og-flowlogix-hero.svg') }}" />
+  <meta property="og:image:secure_url" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='images/og-flowlogix-hero.svg') }}" />
+  <meta property="og:image:type" content="image/svg+xml" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="FlowLogix hero preview showing the product positioning and dashboard UI." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="FlowLogix - Intelligent Supply Chain Management" />
+  <meta name="twitter:description" content="Real-time visibility across warehouses, orders, and deliveries in one clean dashboard." />
+  <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='images/og-flowlogix-hero.svg') }}" />
   <title>FlowLogix — Intelligent Supply Chain Management</title>
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
