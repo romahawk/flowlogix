@@ -333,12 +333,27 @@ canvas#timelineChart {
   white-space: nowrap;
 }
 
+.timeline-week-track span[data-emphasis="month"],
+.timeline-week-track span[data-emphasis="quarter"] {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.04em;
+}
+
 .dark .timeline-week-header {
   background: rgba(15, 23, 42, 0.95);
 }
 
 .dark .timeline-week-track span {
   color: #e2e8f0;
+}
+
+.dashboard-shell,
+#kpi-cards,
+#dashboard-orders-pane,
+#dashboard-timeline-pane {
+  max-width: 100%;
 }
 
 /* ==================== Add Order Form ==================== */
@@ -613,6 +628,218 @@ button:hover {
   .timeline-week-track span {
     font-size: 10px;
     padding: 5px 0;
+  }
+}
+
+@media (max-width: 1279px) {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  header > div,
+  header > nav {
+    width: 100%;
+    min-width: 0;
+  }
+
+  header > nav {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    row-gap: 8px;
+  }
+
+  #toast-global {
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+
+  .dashboard-tab-list,
+  .dashboard-pagination,
+  .timeline-pagination,
+  .timeline-sort-controls,
+  .legend {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-tab-list > button,
+  .timeline-sort-controls > button,
+  .timeline-pagination > div,
+  .timeline-year-filter,
+  .legend-item {
+    min-width: 0;
+  }
+
+  .dashboard-pagination,
+  .timeline-pagination {
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .timeline-controls {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .timeline-year-filter {
+    justify-self: stretch;
+  }
+
+  .timeline-year-filter label,
+  .timeline-year-filter select {
+    display: block;
+    width: 100%;
+  }
+
+  .timeline-year-filter label {
+    margin: 0 0 6px 0;
+  }
+
+  .timeline-sort-controls {
+    justify-content: flex-start;
+  }
+
+  .legend {
+    justify-content: flex-start;
+    margin-bottom: 0;
+  }
+
+  .orders-table-container {
+    overflow-x: hidden;
+    padding: 0;
+  }
+
+  .orders-responsive-table {
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    background: transparent;
+  }
+
+  .orders-responsive-table thead {
+    display: none;
+  }
+
+  .orders-responsive-table tbody,
+  .orders-responsive-table tr,
+  .orders-responsive-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .orders-responsive-table tbody {
+    padding: 10px;
+  }
+
+  .orders-responsive-table tbody tr {
+    margin: 0;
+    padding: 12px;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    border-radius: 14px;
+    background: #f8fafc;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+
+  .dark .orders-responsive-table tbody tr {
+    background: #0f172a;
+    border-color: rgba(71, 85, 105, 0.9);
+    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.35);
+  }
+
+  .orders-responsive-table tbody td.order-cell {
+    display: grid;
+    grid-template-columns: minmax(92px, 120px) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 6px 0;
+    white-space: normal;
+    word-break: break-word;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  }
+
+  .dark .orders-responsive-table tbody td.order-cell {
+    border-bottom-color: rgba(51, 65, 85, 0.9);
+  }
+
+  .orders-responsive-table tbody td.order-cell:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .orders-responsive-table tbody td.order-cell::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .dark .orders-responsive-table tbody td.order-cell::before {
+    color: #94a3b8;
+  }
+
+  .orders-responsive-table tbody td.order-cell .order-action-group {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .orders-responsive-table tbody td.order-cell .action-icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .orders-responsive-table tbody td.order-empty-state {
+    display: block;
+    width: 100%;
+    padding: 20px 12px;
+    border: 1px dashed rgba(148, 163, 184, 0.8);
+    border-radius: 12px;
+    background: #f8fafc;
+  }
+
+  .dark .orders-responsive-table tbody td.order-empty-state {
+    background: #0f172a;
+    border-color: rgba(71, 85, 105, 0.85);
+  }
+}
+
+@media (max-width: 768px) {
+  .timeline-container {
+    padding: 8px;
+  }
+
+  .timeline-week-header {
+    margin-bottom: 4px;
+  }
+
+  .timeline-week-track span {
+    font-size: 9px;
+    padding: 4px 0;
+    border-right-color: rgba(71, 85, 105, 0.35);
+  }
+
+  .timeline-pagination {
+    align-items: stretch;
+  }
+
+  .timeline-pagination > div {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .timeline-pagination > div > button {
+    flex: 1 1 0;
+    justify-content: center;
   }
 }
 
