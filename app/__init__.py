@@ -200,7 +200,8 @@ def create_app():
                 db.session.commit()
 
         login_user(u, remember=False)
-        return redirect("/dashboard")
+        # Do NOT redirect — let the route handler serve the requested page
+        # (landing page for /, dashboard for /dashboard, etc.)
 
     # ---------------- Demo read-only guard (smart allow for read POSTs) ----------------
     SAFE_WRITE_ENDPOINTS = {'auth.login', 'auth.logout', 'auth.register'}
