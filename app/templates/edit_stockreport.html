@@ -17,13 +17,9 @@
     <div class="grid grid-cols-2 gap-4 mb-6">
       <div>
         <label class="block text-sm font-medium">Warehouse</label>
-        <select name="warehouse_address"
+        <input type="text" name="warehouse_address" value="{{ entry.warehouse_address or '' }}"
+          placeholder="e.g. Main Warehouse, Site B"
           class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm" required>
-          <option value="">Select Warehouse</option>
-          {% for wh in ["Pharmalogis", "iCargo", "Quehenberger", "Systra", "Schwarze"] %}
-          <option value="{{ wh }}" {% if entry.warehouse_address==wh %}selected{% endif %}>{{ wh }}</option>
-          {% endfor %}
-        </select>
       </div>
       <div>
         <label class="block text-sm font-medium">Pos. No.</label>
@@ -32,13 +28,9 @@
       </div>
       <div>
         <label class="block text-sm font-medium">Client</label>
-        <select name="client" class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm" required>
-          <option value="">Select Client</option>
-          {% for client in ["Anariti", "Aurora", "Jinling", "Lanhai", "Lekhim Vilnius", "Lekhim Kiev", "Osta", "PCC",
-          "Pharmalogis"] %}
-          <option value="{{ client }}" {% if entry.client==client %}selected{% endif %}>{{ client }}</option>
-          {% endfor %}
-        </select>
+        <input type="text" name="client" value="{{ entry.client or '' }}"
+          placeholder="Client name"
+          class="w-full mt-1 border px-3 py-2 rounded bg-gray-50 dark:bg-gray-700 text-sm" required>
       </div>
       <div>
         <label class="block text-sm font-medium">Client Ref.</label>
@@ -97,10 +89,9 @@
             <td class="p-2 border"><input type="text" name="sender" value="{{ entry.sender }}"
                 class="w-full px-2 py-1 rounded"></td>
             <td class="p-2 border">
-              <select name="customs_status" class="w-full px-2 py-1 rounded" onchange="updateCustomsDates()">
-                <option value="EU" {% if entry.customs_status=='EU' %}selected{% endif %}>EU</option>
-                <option value="T1" {% if entry.customs_status=='T1' %}selected{% endif %}>T1</option>
-              </select>
+              <input type="text" name="customs_status" value="{{ entry.customs_status or '' }}"
+                placeholder="e.g. EU, T1"
+                class="w-full px-2 py-1 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">
             </td>
             <td class="p-2 border"><input type="text" name="stockref" value="{{ entry.stockref }}"
                 class="w-full px-2 py-1 rounded"></td>
@@ -111,17 +102,17 @@
 
     <div class="grid grid-cols-3 gap-4 mt-6 text-sm">
       <div>
-        <label class="block font-medium">ATB First:</label>
+        <label class="block font-medium">First Entry Date:</label>
         <input type="text" name="atb_frist" value="{{ atb_frist or '' }}"
           class="w-full mt-1 border px-3 py-1 rounded bg-gray-50 dark:bg-gray-700 text-sm">
       </div>
       <div>
-        <label class="block font-medium">Customs OZL:</label>
+        <label class="block font-medium">Reference No.:</label>
         <input type="text" name="customs_ozl" value="{{ customs_ozl or '' }}"
           class="w-full mt-1 border px-3 py-1 rounded bg-gray-50 dark:bg-gray-700 text-sm">
       </div>
       <div>
-        <label class="block font-medium">Free till:</label>
+        <label class="block font-medium">Valid Until:</label>
         <input type="text" name="free_till" value="{{ free_till or '' }}"
           class="w-full mt-1 border px-3 py-1 rounded bg-gray-50 dark:bg-gray-700 text-sm">
       </div>

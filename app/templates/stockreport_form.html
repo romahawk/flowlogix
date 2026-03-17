@@ -29,13 +29,8 @@
       <div class="grid grid-cols-2 gap-x-8 gap-y-4">
         <div>
           <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Warehouse</label>
-          <select name="warehouse_address"
+          <input type="text" name="warehouse_address" placeholder="e.g. Main Warehouse, Site B"
             class="w-full border border-gray-300 dark:border-gray-600 px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none" required>
-            <option value="">Select Warehouse</option>
-            {% for w in ['Pharmalogis', 'iCargo', 'Quehenberger', 'Systra', 'Schwarze'] %}
-            <option value="{{ w }}">{{ w }}</option>
-            {% endfor %}
-          </select>
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Pos. No.</label>
@@ -44,13 +39,8 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Client</label>
-          <select name="client"
+          <input type="text" name="client" placeholder="Client name"
             class="w-full border border-gray-300 dark:border-gray-600 px-3 py-2 rounded-md bg-gray-50 dark:bg-gray-700 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none" required>
-            <option value="">Select Client</option>
-            {% for c in ['Anariti', 'Aurora', 'Jinling', 'Lanhai', 'Lekhim Vilnius', 'Lekhim Kiev', 'Osta', 'PCC', 'Pharmalogis'] %}
-            <option value="{{ c }}">{{ c }}</option>
-            {% endfor %}
-          </select>
         </div>
         <div>
           <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Client Ref.</label>
@@ -179,19 +169,19 @@
 
     <!-- Customs info -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5 mb-5">
-      <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Customs Information</h2>
+      <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Additional Information</h2>
       <div class="grid grid-cols-3 gap-6 text-sm">
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ATB First</label>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">First Entry Date</label>
           <span id="atb-frist" class="block text-gray-800 dark:text-gray-200 font-medium">—</span>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Customs OZL</label>
-          <input type="text" name="customs_ozl"
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Reference No.</label>
+          <input type="text" name="customs_ozl" placeholder="e.g. bond number, permit ref."
             class="w-full border border-gray-300 dark:border-gray-600 px-3 py-1.5 rounded-md bg-gray-50 dark:bg-gray-700 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none">
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Free Till</label>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Valid Until</label>
           <span id="free-till" class="block text-gray-800 dark:text-gray-200 font-medium">—</span>
         </div>
       </div>
