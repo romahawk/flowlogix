@@ -358,7 +358,8 @@
         }
 
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Escape' && !document.getElementById('stockreport-modal').classList.contains('hidden'))
+                closeModal();
         });
 
         // Render lucide icons — called directly (DOM is already parsed at this point)
