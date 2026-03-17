@@ -341,12 +341,7 @@
 
     <!-- Stockreport Modal -->
     <div id="stockreport-modal" class="hidden fixed inset-0 z-50 bg-black/60 overflow-y-auto">
-        <div class="min-h-screen w-full bg-white dark:bg-gray-900 p-6">
-            <button onclick="closeModal()"
-                class="absolute top-4 right-4 action-icon-btn hover:text-red-400 hover:bg-red-400/10 w-9 h-9"
-                title="Close Report">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+        <div class="min-h-screen w-full bg-white dark:bg-gray-900">
             <div id="stockreport-modal-content"></div>
         </div>
     </div>
@@ -361,6 +356,10 @@
             content.innerHTML = '';
             document.body.style.overflow = '';
         }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeModal();
+        });
 
         // Render lucide icons — called directly (DOM is already parsed at this point)
         lucide.createIcons();
