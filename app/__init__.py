@@ -1,10 +1,11 @@
 import os
 import re
 import uuid
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from flask import Flask, request, abort, redirect, jsonify, url_for, session
 from flask_login import LoginManager, current_user, login_user
 from flask_migrate import Migrate
+from sqlalchemy import func
 
 from .database import db, init_db
 from .models import User, Order
@@ -130,15 +131,14 @@ def create_app():
                 # Stale check: if the newest order_date is more than 14 days
                 # behind today the seed was loaded in a previous deploy cycle.
                 # Clear all tables and reseed so dates stay current.
-                from datetime import date as _date, timedelta
                 from app.seed_boot import _parse_date
                 from app.models import WarehouseStock, DeliveredGoods
-                today = _date.today()
-                all_dates = [_parse_date(o.order_date) for o in Order.query.all()]
-                valid = [d for d in all_dates if d is not None]
-                if valid and max(valid) < today - timedelta(days=14):
+                today = date.today()
+                max_date_str = db.session.query(func.max(Order.order_date)).scalar()
+                max_date = _parse_date(max_date_str) if max_date_str else None
+                if max_date and max_date < today - timedelta(days=14):
                     app.logger.info(
-                        "Demo seed stale (newest order: %s), reseeding…", max(valid)
+                        "Demo seed stale (newest order: %s), reseeding…", max_date
                     )
                     DeliveredGoods.query.delete()
                     WarehouseStock.query.delete()

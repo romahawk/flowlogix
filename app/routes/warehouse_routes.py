@@ -54,8 +54,8 @@ def warehouse():
     else:
         query = query.order_by(WarehouseStock.ata.desc())
 
-    total_count = query.count()
     pagination = query.paginate(page=page, per_page=per_page)
+    total_count = pagination.total
     warehouse_items = pagination.items
 
     reported_ids = [e.related_order_id for e in StockReportEntry.query.all() if e.related_order_id]
