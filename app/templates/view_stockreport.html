@@ -65,13 +65,9 @@
         <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Warehouse</span>
         <div class="view-mode text-gray-900 dark:text-gray-100 font-medium">{{ item.warehouse_address or '—' }}</div>
         <div class="edit-header hidden">
-          <select name="warehouse_address"
+          <input type="text" name="warehouse_address" value="{{ item.warehouse_address or '' }}"
+            placeholder="e.g. Main Warehouse, Site B"
             class="w-full mt-0.5 border border-gray-300 dark:border-gray-600 px-2 py-1.5 rounded-md text-sm bg-gray-50 dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:outline-none">
-            <option value="">Select Warehouse</option>
-            {% for opt in ['Pharmalogis', 'iCargo', 'Quehenberger', 'Systra', 'Schwarze'] %}
-            <option value="{{ opt }}" {% if item.warehouse_address == opt %}selected{% endif %}>{{ opt }}</option>
-            {% endfor %}
-          </select>
         </div>
       </div>
       <div>
@@ -86,13 +82,9 @@
         <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Client</span>
         <div class="view-mode text-gray-900 dark:text-gray-100 font-medium">{{ item.client or '—' }}</div>
         <div class="edit-header hidden">
-          <select name="client"
+          <input type="text" name="client" value="{{ item.client or '' }}"
+            placeholder="Client name"
             class="w-full mt-0.5 border border-gray-300 dark:border-gray-600 px-2 py-1.5 rounded-md text-sm bg-gray-50 dark:bg-gray-700 focus:ring-1 focus:ring-blue-500 focus:outline-none">
-            <option value="">Select Client</option>
-            {% for opt in ['Anariti', 'Aurora', 'Jinling', 'Lanhai', 'Lekhim Vilnius', 'Lekhim Kiev', 'Osta', 'PCC', 'Pharmalogis'] %}
-            <option value="{{ opt }}" {% if item.client == opt %}selected{% endif %}>{{ opt }}</option>
-            {% endfor %}
-          </select>
         </div>
       </div>
       <div>
@@ -137,11 +129,9 @@
               <div class="view-mode text-gray-800 dark:text-gray-200">{{ entry | lookup(field) or '—' }}</div>
               <div class="edit-header hidden">
                 {% if field == "customs_status" %}
-                <select name="{{ field }}"
+                <input type="text" name="{{ field }}" value="{{ entry | lookup(field) or '' }}"
+                  placeholder="e.g. EU, T1, In-Bond"
                   class="w-full px-1 py-0.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none">
-                  <option value="EU" {% if entry | lookup(field) == 'EU' %}selected{% endif %}>EU</option>
-                  <option value="T1" {% if entry | lookup(field) == 'T1' %}selected{% endif %}>T1</option>
-                </select>
                 {% elif field in ["colli", "pcs", "colli_per_pal", "pcs_total", "pal", "gross_kg", "net_kg"] %}
                 <input type="number" name="{{ field }}" value="{{ entry | lookup(field) }}"
                   class="w-full px-1 py-0.5 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-xs text-center focus:ring-1 focus:ring-blue-500 focus:outline-none">
@@ -164,9 +154,9 @@
 
   <!-- Customs info -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-5 mb-5">
-    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Customs Information</h2>
+    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Additional Information</h2>
     <div class="grid grid-cols-3 gap-6 text-sm">
-      {% for label, field in [("ATB First", "atb_first"), ("Customs OZL", "customs_ozl"), ("Free Till", "free_till")] %}
+      {% for label, field in [("First Entry Date", "atb_first"), ("Reference No.", "customs_ozl"), ("Valid Until", "free_till")] %}
       <div>
         <span class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{{ label }}</span>
         <div class="view-mode text-gray-800 dark:text-gray-200 font-medium">{{ item | lookup(field) or '—' }}</div>

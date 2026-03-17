@@ -295,16 +295,12 @@ def view_stockreport_entries(item_id):
     # Use the first entry as a base for shared metadata
     first_entry = entries[0]
 
-    # ✅ Compute customs-related fields
-    atb_frist = customs_ozl = free_till = None
+    # Compute date-derived fields from the first T1 entry (if present)
+    atb_frist = free_till = None
     if first_entry.customs_status == "T1" and first_entry.entrance_date:
         atb_frist = first_entry.entrance_date.strftime("%d.%m.%Y")
-        customs_ozl = "OZL Hamburg"
         free_till = (first_entry.entrance_date + timedelta(days=90)).strftime("%d.%m.%Y")
-
-        # ✅ Attach to the first entry for template access
         setattr(first_entry, 'atb_first', atb_frist)
-        setattr(first_entry, 'customs_ozl', customs_ozl)
         setattr(first_entry, 'free_till', free_till)
 
     # ✅ Ensure signature fields are passed from entry if present
@@ -437,11 +433,10 @@ def view_stockreport_by_order(order_number):
     # Inherit report header fields from StockReportEntry (first entry)
     first_entry = entries[0] if entries else None
 
-    # Calculate customs info
-    atb_frist = customs_ozl = free_till = None
+    # Calculate date-derived fields from the first T1 entry (if present)
+    atb_frist = free_till = None
     if first_entry and first_entry.customs_status == "T1" and first_entry.entrance_date:
         atb_frist = first_entry.entrance_date.strftime("%d.%m.%Y")
-        customs_ozl = "OZL Hamburg"
         free_till = (first_entry.entrance_date + timedelta(days=90)).strftime("%d.%m.%Y")
 
     return render_template(
@@ -449,7 +444,6 @@ def view_stockreport_by_order(order_number):
         entries=entries,
         item=item,
         atb_frist=atb_frist,
-        customs_ozl=customs_ozl,
         free_till=free_till,
         signature_date_client=getattr(first_entry, 'signature_date_client', None) if first_entry else None,
         signature_client=getattr(first_entry, 'signature_client', None) if first_entry else None,
