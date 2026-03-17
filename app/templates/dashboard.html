@@ -227,7 +227,7 @@
     {% endwith %}
 
     <!-- KPI Cards -->
-    <div id="kpi-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+    <div id="kpi-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5 px-2 sm:px-2">
 
         <!-- In Transit -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 p-3">
@@ -279,10 +279,10 @@
 
     </div>
 
-    <div class="p-2 sm:p-2 space-y-3">
+    <div class="dashboard-shell p-2 sm:p-2 space-y-3">
         <!-- Dashboard Tabs -->
         <div class="p-1 sm:p-1 space-y-1">
-            <div class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 pb-px mb-2 mt-2">
+            <div class="dashboard-tab-list flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 pb-px mb-2 mt-2">
                 <button id="tab-orders" type="button"
                         class="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-t-md border-b-2 -mb-px transition-colors duration-150 border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                     <i data-lucide="boxes" class="w-4 h-4"></i>
@@ -306,7 +306,7 @@
                 </div>
 
                 <div id="orders-table-container" class="orders-table-container overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-md">
-                    <table class="min-w-[800px] w-full bg-gray-100 dark:bg-gray-900">
+                    <table class="orders-responsive-table w-full bg-gray-100 dark:bg-gray-900 lg:min-w-[800px]">
                         <thead>
                             <tr class="bg-slate-800 dark:bg-slate-900 text-slate-300 text-[10px] tracking-wider uppercase select-none">
                                 <th class="th-sortable px-2 py-2 text-center whitespace-nowrap" data-sort="order_date">Order Date <span class="sort-indicator"></span></th>
@@ -332,7 +332,7 @@
                     </table>
                 </div>
 
-                <div id="dashboard-pagination" class="mt-2 flex items-center justify-center gap-2 hidden">
+                <div id="dashboard-pagination" class="dashboard-pagination mt-2 flex items-center justify-center gap-2 hidden">
                     <button id="orders-first-page" type="button"
                             class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed">
                         First
@@ -364,7 +364,7 @@
                 </select>
             </div>
             <!-- Sort controls -->
-            <div class="flex items-center gap-1.5">
+            <div class="timeline-sort-controls flex items-center gap-1.5">
               <button id="tl-sort-date" data-dir="asc"
                 class="tl-sort-btn flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -414,7 +414,7 @@
             <canvas id="timelineChart"></canvas>
         </div>
         <!-- Timeline pagination -->
-        <div class="flex items-center justify-between mt-3 px-1">
+        <div class="timeline-pagination flex items-center justify-between mt-3 px-1">
           <span id="tl-page-info" class="text-xs text-gray-500 dark:text-gray-400"></span>
           <div class="flex gap-2">
             <button id="tl-prev-btn"

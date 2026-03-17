@@ -7,6 +7,8 @@
   'use strict';
 
   const TOUR_KEY = 'flx_tour_done';
+  const MOBILE_TOUR_QUERY = '(max-width: 768px)';
+  const PAD = 10;
 
   const STEPS = [
     {
@@ -30,94 +32,107 @@
     {
       target: '#tab-timeline',
       title: 'Delivery Timeline',
-      body: 'Switch to the <strong>Timeline</strong> tab for a Gantt-style chart of all orders by ETD/ETA. Color-coded status: <span style="color:#f97316">■</span> In Process &nbsp;<span style="color:#3b82f6">■</span> En Route &nbsp;<span style="color:#22c55e">■</span> Arrived.',
+      body: 'Switch to the <strong>Timeline</strong> tab for a Gantt-style chart of all orders by ETD and ETA. Color-coded status: <span style="color:#f97316">■</span> In Process, <span style="color:#3b82f6">■</span> En Route, <span style="color:#22c55e">■</span> Arrived.',
       position: 'bottom',
     },
     {
       target: '[data-tour="nav-warehouse"]',
       title: 'Warehouse Module',
-      body: 'When goods arrive, move them here. Track stock per batch, add customs notes, and generate detailed <strong>Stock Reports</strong> with weights, packing, and sender details — downloadable as PDF.',
+      body: 'When goods arrive, move them here. Track stock per batch, add customs notes, and generate detailed <strong>Stock Reports</strong> with weights, packing, and sender details.',
       position: 'bottom',
     },
     {
       target: '[data-tour="nav-delivered"]',
       title: 'Delivered Tracking',
-      body: 'Finalize shipments, upload <strong>Proof of Delivery</strong> (PDF or image), and keep a full audit trail with transport method and client info. Partial deliveries are supported.',
+      body: 'Finalize shipments, upload <strong>Proof of Delivery</strong>, and keep a full audit trail with transport method and client info. Partial deliveries are supported.',
       position: 'bottom',
     },
     {
       target: '[data-tour="nav-logs"]',
       title: 'Activity Logs',
-      body: 'Every action taken in the system is logged here — who did what and when. Useful for ops audits and handover reports.',
+      body: 'Every action taken in the system is logged here: who did what and when. Useful for ops audits and handover reports.',
       position: 'bottom',
     },
     {
       target: null,
-      title: "You're all set!",
-      body: "You're browsing in <strong>demo mode</strong> (read-only). All data resets to this state automatically. Click <strong>Tour</strong> in the navbar anytime to replay this walkthrough.",
+      title: "You're all set",
+      body: 'You are browsing in <strong>demo mode</strong> (read-only). All data resets to this state automatically. Click <strong>Tour</strong> in the navigation anytime to replay this walkthrough.',
       position: 'center',
     },
   ];
 
-  // ── DOM helpers ──────────────────────────────────────────────────────────────
+  function el(id) {
+    return document.getElementById(id);
+  }
 
-  function el(id) { return document.getElementById(id); }
+  function isMobileTourLayout() {
+    return window.matchMedia(MOBILE_TOUR_QUERY).matches;
+  }
 
-  function buildUI() {
-    // Spotlight frame (creates the dark backdrop via box-shadow)
-    const spotlight = document.createElement('div');
-    spotlight.id = 'flx-tour-spotlight';
-    spotlight.style.cssText = [
-      'position:fixed',
-      'border-radius:6px',
-      'box-shadow:0 0 0 max(100vw,100vh) rgba(0,0,0,0.68)',
-      'z-index:9998',
-      'pointer-events:none',
-      'transition:top 0.28s ease,left 0.28s ease,width 0.28s ease,height 0.28s ease',
-      'outline:3px solid rgba(99,179,237,0.8)',
-    ].join(';');
-
-    // Tooltip bubble
-    const tooltip = document.createElement('div');
-    tooltip.id = 'flx-tour-tooltip';
+  function applyTooltipLayout(tooltip) {
+    const mobile = isMobileTourLayout();
     tooltip.style.cssText = [
       'position:fixed',
       'z-index:9999',
-      'max-width:360px',
-      'width:calc(100vw - 32px)',
-      'background:#1e293b',
+      mobile ? 'inset:auto 0 0 0' : '',
+      mobile ? 'max-width:none' : 'max-width:360px',
+      mobile ? 'width:auto' : 'width:calc(100vw - 32px)',
+      'background:#0f172a',
       'color:#f1f5f9',
-      'border-radius:10px',
-      'box-shadow:0 8px 32px rgba(0,0,0,0.5)',
-      'padding:20px 22px 16px',
+      mobile ? 'border-radius:18px 18px 0 0' : 'border-radius:12px',
+      'box-shadow:0 18px 48px rgba(0,0,0,0.45)',
+      mobile ? 'padding:18px 18px calc(18px + env(safe-area-inset-bottom, 0px))' : 'padding:20px 22px 16px',
       'font-family:inherit',
-      'font-size:14px',
+      mobile ? 'font-size:13px' : 'font-size:14px',
       'line-height:1.55',
-      'transition:top 0.28s ease,left 0.28s ease',
+      mobile ? 'max-height:min(72vh, 620px)' : '',
+      mobile ? 'overflow:auto' : '',
+      'transition:top 0.28s ease,left 0.28s ease,width 0.28s ease',
+    ].filter(Boolean).join(';');
+  }
+
+  function buildUI() {
+    const spotlight = document.createElement('div');
+    spotlight.id = 'flx-tour-spotlight';
+    spotlight.setAttribute('aria-hidden', 'true');
+    spotlight.style.cssText = [
+      'position:fixed',
+      'border-radius:8px',
+      'box-shadow:0 0 0 max(100vw,100vh) rgba(2,6,23,0.72)',
+      'z-index:9998',
+      'pointer-events:none',
+      'transition:top 0.28s ease,left 0.28s ease,width 0.28s ease,height 0.28s ease',
+      'outline:3px solid rgba(96,165,250,0.78)',
     ].join(';');
 
+    const tooltip = document.createElement('div');
+    tooltip.id = 'flx-tour-tooltip';
+    tooltip.setAttribute('role', 'dialog');
+    tooltip.setAttribute('aria-modal', 'true');
+    tooltip.setAttribute('aria-live', 'polite');
+    applyTooltipLayout(tooltip);
+
     tooltip.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
         <strong id="flx-tour-title" style="font-size:15px;color:#93c5fd"></strong>
         <button id="flx-tour-skip" title="Close tour"
-          style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;padding:0 0 0 12px">✕</button>
+          style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;padding:0">×</button>
       </div>
       <div id="flx-tour-body" style="color:#cbd5e1;margin-bottom:16px"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <span id="flx-tour-counter" style="font-size:12px;color:#64748b"></span>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;margin-left:auto">
           <button id="flx-tour-prev"
-            style="padding:6px 14px;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#94a3b8;cursor:pointer;font-size:13px">
-            ← Back
+            style="padding:8px 14px;border-radius:8px;border:1px solid #334155;background:#020617;color:#94a3b8;cursor:pointer;font-size:13px">
+            Back
           </button>
           <button id="flx-tour-next"
-            style="padding:6px 16px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:13px;font-weight:600">
-            Next →
+            style="padding:8px 16px;border-radius:8px;border:none;background:#2563eb;color:#fff;cursor:pointer;font-size:13px;font-weight:600">
+            Next
           </button>
         </div>
       </div>`;
 
-    // Click blocker overlay (sits below spotlight, blocks page interaction)
     const blocker = document.createElement('div');
     blocker.id = 'flx-tour-blocker';
     blocker.style.cssText = 'position:fixed;inset:0;z-index:9997;cursor:default';
@@ -129,122 +144,176 @@
     return { spotlight, tooltip, blocker };
   }
 
-  // ── Positioning ──────────────────────────────────────────────────────────────
-
-  const PAD = 10; // px padding around spotlight target
-
   function positionSpotlight(spotlight, rect) {
-    spotlight.style.top    = (rect.top    - PAD) + 'px';
-    spotlight.style.left   = (rect.left   - PAD) + 'px';
-    spotlight.style.width  = (rect.width  + PAD * 2) + 'px';
+    spotlight.style.top = (rect.top - PAD) + 'px';
+    spotlight.style.left = (rect.left - PAD) + 'px';
+    spotlight.style.width = (rect.width + PAD * 2) + 'px';
     spotlight.style.height = (rect.height + PAD * 2) + 'px';
   }
 
   function positionTooltip(tooltip, rect, position) {
-    const tw = tooltip.offsetWidth  || 360;
+    if (isMobileTourLayout()) {
+      tooltip.style.top = 'auto';
+      tooltip.style.left = '0';
+      tooltip.style.right = '0';
+      tooltip.style.bottom = '0';
+      return;
+    }
+
+    const tw = tooltip.offsetWidth || 360;
     const th = tooltip.offsetHeight || 160;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    let top, left;
+    let top;
+    let left;
 
     if (position === 'center' || !rect) {
-      top  = Math.max(16, (vh - th) / 2);
+      top = Math.max(16, (vh - th) / 2);
       left = Math.max(16, (vw - tw) / 2);
     } else if (position === 'bottom') {
-      top  = rect.bottom + PAD + 14;
+      top = rect.bottom + PAD + 14;
       left = Math.max(16, Math.min(rect.left, vw - tw - 16));
-    } else { // top
-      top  = rect.top - PAD - th - 14;
+    } else {
+      top = rect.top - PAD - th - 14;
       left = Math.max(16, Math.min(rect.left, vw - tw - 16));
     }
 
-    // Clamp to viewport
-    top  = Math.max(16, Math.min(top,  vh - th - 16));
+    top = Math.max(16, Math.min(top, vh - th - 16));
     left = Math.max(16, Math.min(left, vw - tw - 16));
 
-    tooltip.style.top  = top  + 'px';
+    tooltip.style.top = top + 'px';
     tooltip.style.left = left + 'px';
   }
 
-  // ── Tour controller ──────────────────────────────────────────────────────────
-
   function startTour() {
-    if (el('flx-tour-tooltip')) return; // already running
+    if (el('flx-tour-tooltip')) return;
 
     let step = 0;
     const { spotlight, tooltip, blocker } = buildUI();
 
+    function syncLayout() {
+      applyTooltipLayout(tooltip);
+      render(step);
+    }
+
+    function getTarget(selector) {
+      if (!selector) return null;
+      const matches = Array.from(document.querySelectorAll(selector));
+      return matches.find((node) => {
+        const rect = node.getBoundingClientRect();
+        const styles = window.getComputedStyle(node);
+        return styles.display !== 'none' && styles.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      }) || matches[0] || null;
+    }
+
+    function ensureStepContext(targetSelector) {
+      if (targetSelector === '#tab-timeline') {
+        document.getElementById('tab-timeline')?.click();
+      }
+      if (targetSelector === '#orders-table-container') {
+        document.getElementById('tab-orders')?.click();
+      }
+    }
+
     function scrollToTarget(target) {
       if (!target) return Promise.resolve();
-      return new Promise(resolve => {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(resolve, 320);
+      return new Promise((resolve) => {
+        target.style.scrollMarginTop = isMobileTourLayout() ? '92px' : '120px';
+        target.scrollIntoView({ behavior: 'smooth', block: isMobileTourLayout() ? 'start' : 'center' });
+        setTimeout(resolve, isMobileTourLayout() ? 420 : 320);
       });
     }
 
-    async function render(index) {
-      const s = STEPS[index];
-      const target = s.target ? document.querySelector(s.target) : null;
+    function updateSpotlight(rect) {
+      if (!rect || isMobileTourLayout()) {
+        spotlight.style.display = 'none';
+        return;
+      }
 
-      el('flx-tour-title').textContent   = s.title;
-      el('flx-tour-body').innerHTML      = s.body;
+      spotlight.style.display = 'block';
+      positionSpotlight(spotlight, rect);
+    }
+
+    async function render(index) {
+      const current = STEPS[index];
+      ensureStepContext(current.target);
+      const target = getTarget(current.target);
+
+      el('flx-tour-title').textContent = current.title;
+      el('flx-tour-body').innerHTML = current.body;
       el('flx-tour-counter').textContent = `${index + 1} / ${STEPS.length}`;
-      el('flx-tour-prev').disabled       = index === 0;
-      el('flx-tour-prev').style.opacity  = index === 0 ? '0.4' : '1';
-      el('flx-tour-next').textContent    = index === STEPS.length - 1 ? 'Finish ✓' : 'Next →';
+      el('flx-tour-prev').disabled = index === 0;
+      el('flx-tour-prev').style.opacity = index === 0 ? '0.4' : '1';
+      el('flx-tour-next').textContent = index === STEPS.length - 1 ? 'Finish' : 'Next';
 
       if (target) {
         await scrollToTarget(target);
         const rect = target.getBoundingClientRect();
-        spotlight.style.display = 'block';
-        positionSpotlight(spotlight, rect);
-        positionTooltip(tooltip, rect, s.position);
+        updateSpotlight(rect);
+        positionTooltip(tooltip, rect, current.position);
       } else {
-        spotlight.style.display = 'none';
+        updateSpotlight(null);
         positionTooltip(tooltip, null, 'center');
       }
     }
 
     function closeTour() {
-      [spotlight, tooltip, blocker].forEach(n => n.remove());
+      [spotlight, tooltip, blocker].forEach((node) => node.remove());
       localStorage.setItem(TOUR_KEY, '1');
-      // Remove ?tour=1 from URL without reload
       const url = new URL(window.location);
       url.searchParams.delete('tour');
       window.history.replaceState({}, '', url);
+      window.removeEventListener('resize', syncLayout);
     }
 
     el('flx-tour-skip').addEventListener('click', closeTour);
     el('flx-tour-prev').addEventListener('click', () => {
-      if (step > 0) { step--; render(step); }
+      if (step > 0) {
+        step -= 1;
+        render(step);
+      }
     });
     el('flx-tour-next').addEventListener('click', () => {
-      if (step < STEPS.length - 1) { step++; render(step); }
-      else closeTour();
+      if (step < STEPS.length - 1) {
+        step += 1;
+        render(step);
+      } else {
+        closeTour();
+      }
     });
 
-    // Keyboard nav
-    function onKey(e) {
-      if (!el('flx-tour-tooltip')) { document.removeEventListener('keydown', onKey); return; }
-      if (e.key === 'Escape')    { closeTour(); document.removeEventListener('keydown', onKey); }
-      if (e.key === 'ArrowRight' && step < STEPS.length - 1) { step++; render(step); }
-      if (e.key === 'ArrowLeft'  && step > 0)                { step--; render(step); }
+    function onKey(event) {
+      if (!el('flx-tour-tooltip')) {
+        document.removeEventListener('keydown', onKey);
+        return;
+      }
+      if (event.key === 'Escape') {
+        closeTour();
+        document.removeEventListener('keydown', onKey);
+      }
+      if (event.key === 'ArrowRight' && step < STEPS.length - 1) {
+        step += 1;
+        render(step);
+      }
+      if (event.key === 'ArrowLeft' && step > 0) {
+        step -= 1;
+        render(step);
+      }
     }
+
     document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', syncLayout);
 
     render(0);
   }
-
-  // ── Auto-start logic ──────────────────────────────────────────────────────────
 
   window.startTour = startTour;
 
   document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const forced = params.get('tour') === '1';
-    const fresh  = !localStorage.getItem(TOUR_KEY);
+    const fresh = !localStorage.getItem(TOUR_KEY);
     if (forced || fresh) {
-      // Small delay so the page finishes painting
       setTimeout(startTour, 500);
     }
   });

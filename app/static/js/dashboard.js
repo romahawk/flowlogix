@@ -62,10 +62,38 @@ function showConfirm(msg, onConfirm) {
 
 function ensureTimelineWeekHeader() {
   const track = document.getElementById("timeline-week-track");
-  if (!track || track.childElementCount > 0) return;
+  if (!track) return;
+
+  const nextSignature = `${selectedYear || new Date().getFullYear()}-${window.innerWidth}`;
+  if (track.dataset.signature === nextSignature && track.childElementCount > 0) return;
+
+  track.innerHTML = "";
+  track.dataset.signature = nextSignature;
+
+  const year = parseInt(selectedYear, 10) || new Date().getFullYear();
+  const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const quarterLabels = ["Q1", "", "Q2", "", "Q3", "", "Q4", "", "", "", "", ""];
+  const mode = window.innerWidth <= 640 ? "quarter" : window.innerWidth <= 1279 ? "month" : "week";
+  const monthWeekStarts = new Map();
+
+  for (let month = 0; month < 12; month += 1) {
+    const firstDay = new Date(year, month, 1);
+    const weekIndex = Math.min(52, Math.max(1, getWeekNumber(firstDay)));
+    if (!monthWeekStarts.has(weekIndex)) {
+      monthWeekStarts.set(weekIndex, mode === "quarter" ? quarterLabels[month] : monthLabels[month]);
+    }
+  }
+
   for (let week = 1; week <= 52; week += 1) {
     const label = document.createElement("span");
-    label.textContent = `W${week}`;
+    label.textContent =
+      mode === "week"
+        ? `W${week}`
+        : (monthWeekStarts.get(week) || "");
+    label.title = `Week ${week}`;
+    if (label.textContent) {
+      label.dataset.emphasis = mode;
+    }
     track.appendChild(label);
   }
 }
@@ -279,6 +307,7 @@ function renderTimeline(data, keepPage = false) {
   data = pageData;
 
   const year = parseInt(selectedYear) || new Date().getFullYear();
+  const isCompactTimeline = window.innerWidth <= 768;
   const yearStart = new Date(year, 0, 1);
   const yearEnd = new Date(year, 11, 31);
 
@@ -349,8 +378,8 @@ function renderTimeline(data, keepPage = false) {
     return;
   }
 
-  const heightPerOrder = 46;
-  const headerHeight = 50;
+  const heightPerOrder = isCompactTimeline ? 38 : 46;
+  const headerHeight = isCompactTimeline ? 30 : 50;
   const canvasHeight = chartData.length * heightPerOrder + headerHeight;
 
   // Chart.js (responsive=true, maintainAspectRatio=false) sizes the canvas by
@@ -434,7 +463,7 @@ function renderTimeline(data, keepPage = false) {
           ticks: {
             callback: (_, i) => labels[i],
             color: colors.text,
-            font: { size: 12, weight: "500", lineHeight: 1.3 },
+            font: { size: isCompactTimeline ? 10 : 12, weight: "500", lineHeight: 1.3 },
             autoSkip: false,
             padding: 5,
           },
@@ -856,10 +885,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!tbody) return;
     tbody.innerHTML = "";
 
+    const renderCell = (label, value, extraClasses = "", extraAttributes = "") =>
+      `<td data-label="${label}" ${extraAttributes} class="order-cell px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap ${extraClasses}">${value}</td>`;
+
     if (!rows || rows.length === 0) {
       const row = document.createElement("tr");
       row.innerHTML =
-        `<td colspan="15" class="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200 text-center">No orders found</td>`;
+        `<td colspan="15" class="order-empty-state px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200 text-center">No orders found</td>`;
       tbody.appendChild(row);
       lucide.createIcons();
       return;
@@ -879,22 +911,22 @@ document.addEventListener("DOMContentLoaded", function () {
       row.classList.add("bg-gray-100","dark:bg-gray-900","hover:bg-gray-200","dark:hover:bg-gray-700");
 
       row.innerHTML = `
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap" title="Delivery Year: ${order.delivery_year}">${order.order_date || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.order_number || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.product_name || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.buyer || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.responsible || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${formatQuantity(order.quantity)}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.required_delivery || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.terms_of_delivery || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.payment_date || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.etd || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.eta || "-"}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${order.ata || ""}</td>
-        <td class="px-2 py-1 whitespace-nowrap">${statusBadge(order.transit_status)}</td>
-        <td class="px-2 py-1 text-[11px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap">${transportIcon}</td>
-        <td class="px-2 py-1 text-center">
-          <div class="flex items-center justify-center gap-0.5">
+        ${renderCell("Order Date", order.order_date || "-", "", `title="Delivery Year: ${order.delivery_year}"`)}
+        ${renderCell("Order #", order.order_number || "-")}
+        ${renderCell("Product", order.product_name || "-")}
+        ${renderCell("Buyer", order.buyer || "-")}
+        ${renderCell("Responsible", order.responsible || "-")}
+        ${renderCell("Qty", formatQuantity(order.quantity))}
+        ${renderCell("Req. Delivery", order.required_delivery || "-")}
+        ${renderCell("Terms", order.terms_of_delivery || "-")}
+        ${renderCell("Payment", order.payment_date || "-")}
+        ${renderCell("ETD", order.etd || "-")}
+        ${renderCell("ETA", order.eta || "-")}
+        ${renderCell("ATA", order.ata || "-")}
+        ${renderCell("Status", statusBadge(order.transit_status))}
+        ${renderCell("Transport", transportIcon)}
+        <td data-label="Actions" class="order-cell px-2 py-1 text-center">
+          <div class="order-action-group flex items-center justify-center gap-0.5">
             ${
               window.currentUserRole !== "superuser"
                 ? `
@@ -997,7 +1029,13 @@ document.addEventListener("DOMContentLoaded", function () {
     fitOrdersTableToViewport();
   }
 
-  window.addEventListener("resize", fitOrdersTableToViewport);
+  window.addEventListener("resize", () => {
+    fitOrdersTableToViewport();
+    ensureTimelineWeekHeader();
+    if (chartInstance) {
+      syncTimelineWeekHeader(chartInstance);
+    }
+  });
 
   /* ---------- sorting clicks ---------- */
   document.querySelectorAll("table th[data-sort]").forEach((header) => {
@@ -1372,4 +1410,3 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
-
