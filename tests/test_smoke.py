@@ -15,7 +15,7 @@ def test_root_renders_landing(client):
     """GET / renders the public landing page for unauthenticated visitors."""
     resp = client.get("/")
     assert resp.status_code == 200
-    assert b"flowlogix" in resp.data.lower()
+    assert b"flowlogics" in resp.data.lower()
 
 
 def test_api_orders_requires_auth(client):

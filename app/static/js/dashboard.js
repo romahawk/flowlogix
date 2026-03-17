@@ -1,4 +1,4 @@
-/* ========= FlowLogix Dashboard (API-integrated) =========
+/* ========= FlowLogics Dashboard (API-integrated) =========
    - Loads years from /api/years
    - Loads orders for selected year from /api/orders?year=YYYY
    - Preserves existing UI/UX (sorting, filters, timeline, TomSelect, etc.)

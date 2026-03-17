@@ -1,5 +1,5 @@
 /**
- * FlowLogix Spotlight Tour
+ * FlowLogics Spotlight Tour
  * Zero-dependency guided walkthrough for the dashboard.
  * Auto-starts on first visit; re-triggered via window.startTour() or ?tour=1.
  */
@@ -13,7 +13,7 @@
   const STEPS = [
     {
       target: null,
-      title: 'Welcome to FlowLogix',
+      title: 'Welcome to FlowLogics',
       body: 'A pharma supply chain dashboard for tracking orders from origin to delivery. This 60-second tour walks you through the key features.',
       position: 'center',
     },
