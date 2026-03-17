@@ -458,8 +458,6 @@
                 tabTimeline.classList.toggle("border-transparent", ordersActive);
                 tabTimeline.classList.toggle("text-gray-500", ordersActive);
 
-                localStorage.setItem("dashboard-active-tab", mode);
-
                 if (!ordersActive) {
                     // Force timeline redraw after becoming visible.
                     window.dispatchEvent(new Event("resize"));
@@ -469,8 +467,7 @@
             tabOrders.addEventListener("click", () => setTab("orders"));
             tabTimeline.addEventListener("click", () => setTab("timeline"));
 
-            const saved = localStorage.getItem("dashboard-active-tab");
-            setTab(saved === "timeline" ? "timeline" : "orders");
+            setTab("orders");
         });
     </script>
 
