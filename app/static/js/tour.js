@@ -36,6 +36,13 @@
       position: 'bottom',
     },
     {
+      target: '#timelineChart',
+      title: 'Timeline Controls',
+      body: 'Sort by <strong>Date</strong> to reframe the timeline, then hover a delivery bar to inspect the live tooltip with exact shipment dates.',
+      position: 'top',
+      action: 'timeline-demo',
+    },
+    {
       target: '[data-tour="nav-warehouse"]',
       title: 'Warehouse Module',
       body: 'When goods arrive, move them here. Track stock per batch, add customs notes, and generate detailed <strong>Stock Reports</strong> with weights, packing, and sender details.',
@@ -52,6 +59,13 @@
       title: 'Activity Logs',
       body: 'Every action taken in the system is logged here: who did what and when. Useful for ops audits and handover reports.',
       position: 'bottom',
+    },
+    {
+      target: '#dark-mode-toggle',
+      title: 'Adaptive Theme',
+      body: 'Toggle light and dark mode instantly to match warehouse floors, office desks, or low-light review sessions without losing visual clarity.',
+      position: 'bottom',
+      action: 'theme-toggle',
     },
     {
       target: null,
@@ -74,14 +88,15 @@
     tooltip.style.cssText = [
       'position:fixed',
       'z-index:9999',
-      mobile ? 'inset:auto 0 0 0' : '',
+      mobile ? 'left:12px;right:12px;bottom:12px' : '',
       mobile ? 'max-width:none' : 'max-width:360px',
-      mobile ? 'width:auto' : 'width:calc(100vw - 32px)',
-      'background:#0f172a',
+      mobile ? 'width:auto' : 'width:calc(100vw - 48px)',
+      'background:linear-gradient(145deg, rgba(15,23,42,0.98) 0%, rgba(30,41,59,0.96) 52%, rgba(37,99,235,0.90) 100%)',
       'color:#f1f5f9',
       mobile ? 'border-radius:18px 18px 0 0' : 'border-radius:12px',
+      'border:1px solid rgba(148,163,184,0.22)',
       'box-shadow:0 18px 48px rgba(0,0,0,0.45)',
-      mobile ? 'padding:18px 18px calc(18px + env(safe-area-inset-bottom, 0px))' : 'padding:20px 22px 16px',
+      mobile ? 'padding:22px 22px calc(22px + env(safe-area-inset-bottom, 0px))' : 'padding:24px 26px 20px',
       'font-family:inherit',
       mobile ? 'font-size:13px' : 'font-size:14px',
       'line-height:1.55',
@@ -113,13 +128,13 @@
     applyTooltipLayout(tooltip);
 
     tooltip.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px">
         <strong id="flx-tour-title" style="font-size:15px;color:#93c5fd"></strong>
         <button id="flx-tour-skip" title="Close tour"
           style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;padding:0">×</button>
       </div>
-      <div id="flx-tour-body" style="color:#cbd5e1;margin-bottom:16px"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div id="flx-tour-body" style="color:#cbd5e1;margin-bottom:20px;padding-right:4px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:4px">
         <span id="flx-tour-counter" style="font-size:12px;color:#64748b"></span>
         <div style="display:flex;gap:8px;margin-left:auto">
           <button id="flx-tour-prev"
@@ -189,6 +204,8 @@
     if (el('flx-tour-tooltip')) return;
 
     let step = 0;
+    let lastRenderedStep = -1;
+    const initialDarkMode = document.documentElement.classList.contains('dark');
     const { spotlight, tooltip, blocker } = buildUI();
 
     function syncLayout() {
@@ -210,8 +227,44 @@
       if (targetSelector === '#tab-timeline') {
         document.getElementById('tab-timeline')?.click();
       }
+      if (targetSelector === '#timelineChart' || targetSelector === '#tl-sort-date') {
+        document.getElementById('tab-timeline')?.click();
+      }
       if (targetSelector === '#orders-table-container') {
         document.getElementById('tab-orders')?.click();
+      }
+    }
+
+    function hoverTimelineBar() {
+      const canvas = document.getElementById('timelineChart');
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      const x = rect.left + rect.width * 0.56;
+      const y = rect.top + Math.min(84, rect.height * 0.16);
+      const evt = new MouseEvent('mousemove', {
+        clientX: x,
+        clientY: y,
+        bubbles: true,
+      });
+      canvas.dispatchEvent(evt);
+    }
+
+    async function runStepAction(current) {
+      if (!current?.action) return;
+
+      if (current.action === 'timeline-demo') {
+        document.getElementById('tab-timeline')?.click();
+        await new Promise((resolve) => setTimeout(resolve, 320));
+        document.getElementById('tl-sort-date')?.click();
+        await new Promise((resolve) => setTimeout(resolve, 420));
+        hoverTimelineBar();
+      }
+
+      if (current.action === 'theme-toggle') {
+        document.getElementById('dark-mode-toggle')?.click();
+        await new Promise((resolve) => setTimeout(resolve, 260));
       }
     }
 
@@ -237,6 +290,10 @@
     async function render(index) {
       const current = STEPS[index];
       ensureStepContext(current.target);
+      if (index !== lastRenderedStep) {
+        await runStepAction(current);
+        lastRenderedStep = index;
+      }
       const target = getTarget(current.target);
 
       el('flx-tour-title').textContent = current.title;
@@ -258,6 +315,10 @@
     }
 
     function closeTour() {
+      const currentDarkMode = document.documentElement.classList.contains('dark');
+      if (currentDarkMode !== initialDarkMode) {
+        document.getElementById('dark-mode-toggle')?.click();
+      }
       [spotlight, tooltip, blocker].forEach((node) => node.remove());
       localStorage.setItem(TOUR_KEY, '1');
       const url = new URL(window.location);

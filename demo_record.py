@@ -2,8 +2,13 @@
 """
 FlowLogix Demo Recorder
 =======================
-Drives the running app with Playwright and saves a high-quality video
-walkthrough to demo_output/demo.webm (and a PNG thumbnail).
+Records a concise 20-second dashboard-focused demo with on-screen captions:
+
+0-3s   Show full dashboard   "Single source of truth"
+3-8s   Click STATUS sort     "State-driven system"
+8-14s  Hover actions + click Move to warehouse   "Real-time updates"
+14-18s Show timeline + click Date   "Helicopter view"
+18-20s Zoom out             "System overview"
 
 Prerequisites
 -------------
@@ -15,12 +20,6 @@ Usage
     # App must already be running before you start the recorder
     python demo_record.py
     python demo_record.py --url http://127.0.0.1:5000 --out my_demo
-
-Flags
------
-    --url    Base URL of the running app   (default: http://127.0.0.1:5000)
-    --out    Output directory for artefacts (default: demo_output)
-    --headless  Run without a visible window (default: False)
 """
 
 import argparse
@@ -29,7 +28,7 @@ import sys
 from pathlib import Path
 
 try:
-    from playwright.async_api import async_playwright, Page, TimeoutError as PlaywrightTimeoutError
+    from playwright.async_api import async_playwright, Locator, Page, TimeoutError as PlaywrightTimeoutError
 except ImportError:
     raise SystemExit(
         "\n[demo_record] 'playwright' is not installed.\n"
@@ -63,168 +62,210 @@ async def banner(msg: str) -> None:
     print(f"\n  ->  {msg}")
 
 
+async def ensure_caption_overlay(page: Page) -> None:
+    await page.evaluate(
+        """
+        () => {
+          if (document.getElementById('demo-caption-overlay')) return;
+          const el = document.createElement('div');
+          el.id = 'demo-caption-overlay';
+          Object.assign(el.style, {
+            position: 'fixed',
+            left: '50%',
+            bottom: '28px',
+            transform: 'translateX(-50%)',
+            zIndex: '99999',
+            padding: '12px 18px',
+            borderRadius: '999px',
+            background: 'rgba(15, 23, 42, 0.84)',
+            color: '#f8fafc',
+            fontFamily: 'Segoe UI, Arial, sans-serif',
+            fontSize: '24px',
+            fontWeight: '700',
+            letterSpacing: '0.01em',
+            boxShadow: '0 18px 48px rgba(15, 23, 42, 0.35)',
+            backdropFilter: 'blur(8px)',
+            pointerEvents: 'none',
+            opacity: '0',
+            transition: 'opacity 220ms ease'
+          });
+          document.body.appendChild(el);
+        }
+        """
+    )
+
+
+async def set_caption(page: Page, text: str) -> None:
+    await ensure_caption_overlay(page)
+    await page.evaluate(
+        """([message]) => {
+          const el = document.getElementById('demo-caption-overlay');
+          if (!el) return;
+          el.textContent = message;
+          el.style.opacity = message ? '1' : '0';
+        }""",
+        [text],
+    )
+
+
+async def wait_for_dashboard(page: Page, base_url: str) -> None:
+    await page.wait_for_url(f"{base_url}/dashboard**", timeout=12_000)
+    await dismiss_tour_modal(page)
+    await page.wait_for_selector("#orders-table-container tbody tr", timeout=15_000)
+    await dismiss_tour_modal(page)
+    await wait(700)
+
+
+async def disable_warehouse_submit(page: Page) -> None:
+    await page.evaluate(
+        """
+        () => {
+          document.querySelectorAll('form[action^="/stock_order/"]').forEach((form) => {
+            if (form.dataset.demoRecorderBound === '1') return;
+            form.dataset.demoRecorderBound = '1';
+            form.addEventListener('submit', (event) => {
+              event.preventDefault();
+              const btn = form.querySelector('button[title="Move to Warehouse"]');
+              const kpi = document.getElementById('kpi-warehouse-count');
+              if (btn) {
+                btn.style.transform = 'scale(0.94)';
+                setTimeout(() => { btn.style.transform = ''; }, 180);
+              }
+              if (kpi) {
+                kpi.style.transition = 'transform 220ms ease, color 220ms ease';
+                kpi.style.transform = 'scale(1.08)';
+                kpi.style.color = '#a855f7';
+                setTimeout(() => {
+                  kpi.style.transform = '';
+                  kpi.style.color = '';
+                }, 700);
+              }
+            });
+          });
+        }
+        """
+    )
+
+
+async def sort_by_status(page: Page) -> None:
+    header = page.locator('th[data-sort="transit_status"]')
+    await header.scroll_into_view_if_needed()
+    await wait(300)
+    await header.click(force=True)
+    await page.wait_for_timeout(900)
+
+
+async def find_warehouse_button(page: Page) -> Locator:
+    next_btn = page.locator("#orders-next-page")
+    warehouse_btn = page.locator('button[title="Move to Warehouse"]')
+
+    for attempt in range(6):
+        await disable_warehouse_submit(page)
+        if await warehouse_btn.count() > 0:
+            return warehouse_btn.first
+        if attempt == 0:
+            await sort_by_status(page)
+            continue
+        if await next_btn.count() > 0 and await next_btn.is_visible() and await next_btn.is_enabled():
+            await next_btn.click(force=True)
+            await page.wait_for_timeout(900)
+            continue
+        break
+
+    raise PlaywrightTimeoutError("No visible 'Move to Warehouse' action found in paginated orders table.")
+
+
 async def dismiss_tour_modal(page: Page) -> None:
-    """Close onboarding modal if visible and suppress it for this browser context."""
-    await page.evaluate("localStorage.setItem('tourCompleted', 'true')")
-    close_btn = page.locator("#closeTourBtn")
-    if await close_btn.count() > 0 and await close_btn.is_visible():
-        await close_btn.click()
-        await wait(300)
+    """Suppress the guided tour and remove any active blocker overlay."""
+    await page.evaluate(
+        """
+        () => {
+          localStorage.setItem('tourCompleted', 'true');
+          localStorage.setItem('flx_tour_done', '1');
+          ['flx-tour-tooltip', 'flx-tour-spotlight', 'flx-tour-blocker'].forEach((id) => {
+            document.getElementById(id)?.remove();
+          });
+        }
+        """
+    )
+    close_btn = page.locator("#closeTourBtn, #flx-tour-skip")
+    if await close_btn.count() > 0:
+        try:
+            await close_btn.first.click(timeout=1000)
+            await wait(200)
+        except Exception:
+            pass
 
 
 async def scene_login(page: Page, base_url: str) -> None:
-    await banner("LOGIN PAGE")
-    await page.goto(f"{base_url}/login")
-    await wait(1000)
-
-    # Support both flows:
-    # 1) classic login form
-    # 2) demo auto-login that redirects straight to /dashboard
+    await banner("OPEN DASHBOARD")
+    await page.goto(f"{base_url}/dashboard")
     try:
-        await page.wait_for_selector('input[name="username"]', timeout=3500)
+        await wait_for_dashboard(page, base_url)
+    except PlaywrightTimeoutError:
+        await banner("Falling back to explicit login flow")
+        await page.goto(f"{base_url}/login")
+        await page.wait_for_selector('input[name="username"]', timeout=5000)
         await page.fill('input[name="username"]', "")
         await slow_type(page, 'input[name="username"]', USERNAME)
-        await wait(400)
-
+        await wait(300)
         await page.fill('input[name="password"]', "")
         await slow_type(page, 'input[name="password"]', PASSWORD)
-        await wait(700)
-
+        await wait(500)
         await page.click('button[type="submit"]')
-        await page.wait_for_url(f"{base_url}/dashboard**", timeout=12_000)
-    except PlaywrightTimeoutError:
-        await page.goto(f"{base_url}/dashboard")
-        await page.wait_for_url(f"{base_url}/dashboard**", timeout=12_000)
+        await wait_for_dashboard(page, base_url)
 
+
+async def scene_dashboard_story(page: Page, base_url: str) -> None:
+    await banner("20-SECOND DASHBOARD STORY")
     await dismiss_tour_modal(page)
-    await wait(1800)
+    await scroll_into_view(page, "#kpi-cards")
+    await page.evaluate("document.body.style.zoom = '1'")
+    await set_caption(page, "Single source of truth")
+    await wait(3000)
 
-
-async def scene_orders_tab(page: Page) -> None:
-    await banner("YOUR ORDERS TAB - colour-coded statuses")
+    await banner("Sorting by status")
+    await set_caption(page, "State-driven system")
     await dismiss_tour_modal(page)
+    await sort_by_status(page)
+    await wait(4100)
 
-    await page.click("#tab-orders")
-    await wait(800)
+    await banner("Hovering actions and clicking warehouse move")
+    await set_caption(page, "Real-time updates")
+    warehouse_btn = await find_warehouse_button(page)
+    await warehouse_btn.scroll_into_view_if_needed()
+    await wait(300)
+    await warehouse_btn.hover()
+    await wait(1400)
+    await warehouse_btn.click(force=True)
+    await wait(4300)
 
-    await scroll_into_view(page, "#orders-table-container")
-    await wait(1200)
-
-    rows = await page.locator("#orders-table-container tbody tr").all()
-    for row in rows[:5]:
-        await row.hover()
-        await wait(550)
-
-    await wait(1000)
-
-
-async def scene_timeline_tab(page: Page) -> None:
-    await banner("TIMELINE TAB - Gantt-style chart")
+    await banner("Returning to timeline")
+    await page.goto(f"{base_url}/dashboard")
+    await wait_for_dashboard(page, base_url)
+    await set_caption(page, "Helicopter view")
     await dismiss_tour_modal(page)
-
-    await page.click("#tab-timeline")
-    await wait(1500)
+    await page.click("#tab-timeline", force=True)
+    await page.wait_for_selector("#timelineChart", timeout=12_000)
+    await wait(900)
+    await page.click("#tl-sort-date", force=True)
+    await wait(900)
 
     canvas_locator = page.locator("#timelineChart")
-    await canvas_locator.scroll_into_view_if_needed()
-    await wait(1200)
-
     canvas = await canvas_locator.bounding_box()
     if canvas:
-        await banner("  Sweeping cursor to show tooltips...")
         cx, cy = canvas["x"], canvas["y"]
         cw, ch = canvas["width"], canvas["height"]
-
-        for x_frac, y_frac in [(0.25, 0.25), (0.42, 0.45), (0.60, 0.35), (0.75, 0.55)]:
+        for x_frac, y_frac in [(0.22, 0.24), (0.46, 0.44), (0.72, 0.66)]:
             await page.mouse.move(cx + cw * x_frac, cy + ch * y_frac)
-            await wait(900)
+            await wait(550)
+    await wait(250)
 
-        await page.mouse.move(cx - 40, cy)
-
-    await wait(1200)
-
-
-async def scene_add_order(page: Page) -> None:
-    await banner("ADD ORDER FORM - opening & filling in a new order")
-    await dismiss_tour_modal(page)
-
-    await page.click("#tab-orders")
-    await wait(600)
-
-    toggle_btn = page.locator(".toggle-form-btn").first
-    await toggle_btn.scroll_into_view_if_needed()
-    await toggle_btn.click()
-    await wait(1000)
-
-    await scroll_into_view(page, "#add-order-section")
-    await wait(600)
-
-    await page.fill("#order_date", "2026-04-01")
-    await wait(300)
-
-    await slow_type(page, "#order_number", "PO-2026-099", delay=60)
-    await wait(400)
-
-    ts_control = page.locator("#product_name + .ts-wrapper .ts-control")
-    await ts_control.click()
-    await wait(300)
-    await page.keyboard.type("Amox", delay=70)
-    await wait(600)
-    first_option = page.locator(".ts-dropdown .ts-option").first
-    if await first_option.is_visible():
-        await first_option.click()
-    else:
-        await page.keyboard.press("Escape")
-    await wait(400)
-
-    await slow_type(page, 'input[name="buyer"]', "City Hospital", delay=55)
-    await wait(300)
-
-    await page.fill('input[name="quantity"]', "500")
-    await wait(300)
-
-    await page.fill("#etd", "2026-04-10")
-    await wait(300)
-    await page.fill('input[name="eta"]', "2026-05-20")
-    await wait(600)
-
-    await wait(1800)
-
-    close_btn = page.locator("#close-add-order")
-    if await close_btn.is_visible():
-        await close_btn.click()
-    else:
-        await toggle_btn.click()
-    await wait(800)
-
-
-async def scene_dark_mode(page: Page) -> None:
-    await banner("DARK MODE TOGGLE")
-
-    dark_btn = page.locator("#dark-mode-toggle")
-    await dark_btn.scroll_into_view_if_needed()
-
-    await dark_btn.click()
-    await wait(1800)
-
-    await dark_btn.click()
-    await wait(1200)
-
-
-async def scene_warehouse(page: Page, base_url: str) -> None:
-    await banner("WAREHOUSE PAGE")
-    await page.goto(f"{base_url}/warehouse")
+    await banner("Zooming out for final frame")
+    await set_caption(page, "System overview")
+    await page.evaluate("document.body.style.zoom = '0.88'")
     await wait(2000)
-    await page.mouse.wheel(0, 400)
-    await wait(1500)
-
-
-async def scene_delivered(page: Page, base_url: str) -> None:
-    await banner("DELIVERED PAGE")
-    await page.goto(f"{base_url}/delivered")
-    await wait(2000)
-    await page.mouse.wheel(0, 300)
-    await wait(1500)
+    await set_caption(page, "")
 
 
 async def record_demo(base_url: str, output_dir: Path, headless: bool) -> None:
@@ -242,19 +283,25 @@ async def record_demo(base_url: str, output_dir: Path, headless: bool) -> None:
             record_video_size=VIEWPORT,
             java_script_enabled=True,
         )
+        await ctx.add_init_script(
+            """
+            () => {
+              localStorage.setItem('flx_tour_done', '1');
+              localStorage.setItem('tourCompleted', 'true');
+            }
+            """
+        )
         page = await ctx.new_page()
 
         await scene_login(page, base_url)
-        await scene_orders_tab(page)
-        await scene_timeline_tab(page)
-        await scene_add_order(page)
-        await scene_dark_mode(page)
-        await scene_warehouse(page, base_url)
-        await scene_delivered(page, base_url)
+        await scene_dashboard_story(page, base_url)
 
         await banner("Saving screenshot thumbnail...")
         await page.goto(f"{base_url}/dashboard")
-        await wait(1500)
+        await wait_for_dashboard(page, base_url)
+        await set_caption(page, "")
+        await page.evaluate("document.body.style.zoom = '1'")
+        await wait(500)
         screenshot_path = output_dir / "thumbnail.png"
         await page.screenshot(path=str(screenshot_path), full_page=False)
         print(f"  OK  Thumbnail -> {screenshot_path}")
